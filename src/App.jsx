@@ -32,7 +32,10 @@ import {
   FilePlus,
   Share,
   VolumeX,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon,
+  Sunset
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
@@ -54,7 +57,7 @@ const DEFAULT_CONFIG = {
     openSymbolsSecret: "",
     gridSize: "auto",
     offlineOnly: false,
-    enableSentenceBuilder: true, // Default to true for AI features
+    enableSentenceBuilder: true,
     speakOnSelect: false,
     showLabels: true,
   },
@@ -93,7 +96,7 @@ const STORAGE_KEY = 'zip_easyspeak_config';
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export default function App() {
-  // --- Main State with Persistence ---
+  // --- Main State ---
   const [config, setConfig] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -106,26 +109,35 @@ export default function App() {
         };
       }
     } catch (e) {
-      console.error("Failed to load config from storage", e);
+      console.error("Failed to load config", e);
     }
     return DEFAULT_CONFIG;
   });
 
-  const [activePageId, setActivePageId] = useState(() => {
-    return config.pages[0].id;
-  });
+  const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
+  const [timeContext, setTimeContext] = useState(''); // morning, afternoon, evening
 
+  // --- Effects ---
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   }, [config]);
 
+  // Time of Day Detection
+  useEffect(() => {
+    const updateTimeContext = () => {
+      const h = new Date().getHours();
+      if (h >= 5 && h < 12) setTimeContext('morning');
+      else if (h >= 12 && h < 18) setTimeContext('afternoon');
+      else setTimeContext('evening');
+    };
+    updateTimeContext();
+    const interval = setInterval(updateTimeContext, 60000 * 30); // Check every 30 mins
+    return () => clearInterval(interval);
+  }, []);
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
-
-  // --- Sentence Builder State ---
   const [sentence, setSentence] = useState([]);
-
-  // --- Auth State ---
   const [accessToken, setAccessToken] = useState(null);
 
   // --- UI State ---
@@ -133,13 +145,9 @@ export default function App() {
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [editingTile, setEditingTile] = useState(null);
   const [editingPage, setEditingPage] = useState(null);
-
-  // Security State
   const [pinPrompt, setPinPrompt] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinContext, setPinContext] = useState(null);
-
-  // Search State
   const [showImageSearch, setShowImageSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -150,7 +158,6 @@ export default function App() {
   const fileInputRef = useRef(null);
   const mergeInputRef = useRef(null);
 
-  // --- Effects ---
   useEffect(() => {
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
@@ -163,7 +170,6 @@ export default function App() {
   }, []);
 
   // --- Actions ---
-
   const speak = (text) => {
     if (!text) return;
     window.speechSynthesis.cancel();
@@ -171,7 +177,6 @@ export default function App() {
     utterance.rate = config.settings.rate;
     utterance.pitch = config.settings.pitch;
     utterance.volume = config.settings.volume;
-
     if (config.settings.voiceURI) {
       const selectedVoice = availableVoices.find(v => v.voiceURI === config.settings.voiceURI);
       if (selectedVoice) utterance.voice = selectedVoice;
@@ -181,27 +186,20 @@ export default function App() {
 
   const handleTileClick = (tile) => {
     const isSilent = tile.isSilent === true;
-
     if (!isSilent) {
       if (config.settings.enableSentenceBuilder) {
         setSentence(prev => [...prev, tile]);
-        if (config.settings.speakOnSelect) {
-          speak(tile.phrase);
-        }
+        if (config.settings.speakOnSelect) speak(tile.phrase);
       } else {
         speak(tile.phrase);
       }
     }
-
     if (tile.linkToPage && tile.linkToPage !== "") {
       const targetPage = config.pages.find(p => p.id === tile.linkToPage);
-      if (targetPage) {
-        setActivePageId(targetPage.id);
-      }
+      if (targetPage) setActivePageId(targetPage.id);
     }
   };
 
-  // Helper to determine if a tile should be highlighted based on prediction
   const getIsPredicted = (tileLabel) => {
     if (sentence.length === 0) return false;
     const lastWord = sentence[sentence.length - 1].phrase.toLowerCase();
@@ -215,14 +213,11 @@ export default function App() {
     speak(fullText);
   };
 
-  const speakMagicPrediction = (text) => {
-    speak(text);
-  };
-
+  const speakMagicPrediction = (text) => speak(text);
   const clearSentence = () => setSentence([]);
   const removeLastWord = () => setSentence(prev => prev.slice(0, -1));
 
-  // --- Import/Export (Existing code preserved) ---
+  // --- Import/Export ---
   const downloadJSON = (data, filename) => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
     const a = document.createElement('a');
@@ -233,16 +228,9 @@ export default function App() {
     a.remove();
   };
 
-  const handleExport = () => {
-    downloadJSON(config, "zip_easyspeak_backup.json");
-  };
-
+  const handleExport = () => downloadJSON(config, "zip_easyspeak_backup.json");
   const handleExportPage = (page) => {
-    const singlePageConfig = {
-      version: 1,
-      settings: config.settings,
-      pages: [page]
-    };
+    const singlePageConfig = { version: 1, settings: config.settings, pages: [page] };
     downloadJSON(singlePageConfig, `page_${page.label.replace(/\s+/g, '_').toLowerCase()}.json`);
   };
 
@@ -256,9 +244,7 @@ export default function App() {
           setConfig(imported);
           setActivePageId(imported.pages[0].id);
           alert("Full backup restored!");
-        } else {
-          alert("Invalid config file structure.");
-        }
+        } else { alert("Invalid config file structure."); }
       } catch (err) { alert("Error parsing file."); }
     };
   };
@@ -276,15 +262,9 @@ export default function App() {
             }
             return p;
           });
-
-          setConfig(prev => ({
-            ...prev,
-            pages: [...prev.pages, ...newPages]
-          }));
+          setConfig(prev => ({ ...prev, pages: [...prev.pages, ...newPages] }));
           alert(`Success! Added ${newPages.length} page(s) to your board.`);
-        } else {
-          alert("Invalid file. No pages found.");
-        }
+        } else { alert("Invalid file. No pages found."); }
       } catch (err) { alert("Error parsing file."); }
     };
   };
@@ -322,16 +302,12 @@ export default function App() {
     }
   };
 
-  // --- Proxy & Search Logic (Preserved) ---
+  // --- Proxy & Search Logic ---
   const getProxyUrl = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
   const getImageProxyUrl = (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&output=webp`;
   const getPostProxyUrl = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
 
   const fetchAuthToken = async () => {
-    // ... existing auth code ...
-    // For brevity in this diff, assuming this function remains exactly as in your provided file
-    // If you need it re-generated fully, let me know. 
-    // I will assume standard OpenSymbols logic here.
     let secret = config.settings.openSymbolsSecret;
     try { if (import.meta && import.meta.env) { if (!secret) secret = import.meta.env.VITE_OPENSYMBOLS_SECRET || ""; } } catch (e) { }
     if (!secret) throw new Error("Missing Shared Secret. Please add it in Settings.");
@@ -348,7 +324,6 @@ export default function App() {
   };
 
   const searchSymbols = async () => {
-    // ... existing search logic ...
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     setSearchResults([]);
@@ -438,11 +413,8 @@ export default function App() {
   };
 
   // --- Components ---
-
   const Tile = ({ tile, onClick, editMode }) => {
-    // Prediction Check
     const isPredicted = !editMode && getIsPredicted(tile.phrase);
-
     return (
       <div
         onClick={() => !editMode && onClick(tile)}
@@ -457,7 +429,6 @@ export default function App() {
             <span className="text-5xl md:text-6xl select-none">{tile.image}</span>
           )}
         </div>
-
         {showLabels && (
           <div className="w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 text-sm md:text-base truncate flex items-center justify-center gap-1">
             {tile.label}
@@ -465,14 +436,11 @@ export default function App() {
             {tile.isSilent && editMode && <VolumeX size={12} className="text-red-500 opacity-70" />}
           </div>
         )}
-
-        {/* Prediction Star */}
         {isPredicted && (
           <div className="absolute top-2 right-2 text-yellow-600 animate-pulse">
             <Sparkles size={20} fill="currentColor" />
           </div>
         )}
-
         {editMode && (
           <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button onClick={(e) => { e.stopPropagation(); setEditingTile(tile); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 text-blue-600 mr-2"><Edit2 size={20} /></button>
@@ -542,19 +510,29 @@ export default function App() {
 
           {/* --- NEW: Magic Bar --- */}
           {config.settings.enableSentenceBuilder && (
-            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} />
+            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} context={timeContext} />
           )}
 
-          {/* Page Info */}
+          {/* Page Info & Time Context */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/pwa-192x192.png" alt="Logo" className="md:hidden w-8 h-8 rounded-lg shadow-sm object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
               <h1 className="text-3xl font-bold flex items-center gap-2">{activePage.icon} {activePage.label}</h1>
               {isEditMode && <button onClick={() => setEditingPage(activePage)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500"><Edit2 size={16} /></button>}
             </div>
-            {/* Quick Voice Indicator */}
-            <div className="hidden md:flex items-center gap-2 bg-white/60 px-4 py-2 rounded-full text-xs text-slate-500 font-bold">
-              {config.settings.enableSentenceBuilder ? 'MODE: SENTENCE' : 'MODE: DIRECT'}
+
+            <div className="flex items-center gap-2">
+              {/* Time Context Indicator */}
+              <div className="hidden md:flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white">
+                {timeContext === 'morning' && <><Sun size={14} className="text-orange-500" /> Morning</>}
+                {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600" /> Afternoon</>}
+                {timeContext === 'evening' && <><Sunset size={14} className="text-indigo-500" /> Evening</>}
+              </div>
+
+              {/* Mode Indicator */}
+              <div className="hidden md:flex items-center gap-2 bg-white/60 px-4 py-2 rounded-full text-xs text-slate-500 font-bold">
+                {config.settings.enableSentenceBuilder ? 'MODE: SENTENCE' : 'MODE: DIRECT'}
+              </div>
             </div>
           </div>
         </div>

@@ -24,15 +24,25 @@ class AIService {
         }
     }
 
-    async expandSentence(words) {
+    /**
+     * Expands keywords into a full sentence, biased by context.
+     * @param {string[]} words - The keywords (e.g., ["I", "Want"])
+     * @param {string} context - The time context (e.g., "morning", "evening")
+     */
+    async expandSentence(words, context = "") {
         if (!this.model || words.length === 0) return [];
 
         const text = words.join(" ");
-        const prompt = `Expand keywords to sentence: ${text}`;
+
+        // Context-Aware Prompt Engineering
+        let prompt = `Expand keywords to sentence: ${text}`;
+        if (context) {
+            prompt = `Context: ${context}. ${prompt}`;
+        }
 
         try {
             const output = await this.model(prompt, {
-                max_new_tokens: 20,
+                max_new_tokens: 25,
                 num_return_sequences: 3,
                 temperature: 0.6,
                 do_sample: true
