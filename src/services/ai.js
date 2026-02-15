@@ -36,12 +36,11 @@ class AIService {
         const questionStarters = ["who", "what", "where", "when", "why", "how", "can", "do", "does", "is", "are", "may", "could", "would"];
         const isQuestion = questionStarters.includes(words[0].toLowerCase());
 
-        // IMPROVED PROMPTS: "Expand" is more directive for AAC than "Fix grammar"
         let prompt;
         if (isQuestion) {
-            prompt = `Expand to a complete question: ${text}`;
+            prompt = `Write a simple question using: ${text}`;
         } else {
-            prompt = `Expand to a complete sentence: ${text}`;
+            prompt = `Write a simple sentence using: ${text}`;
         }
 
         if (context) {
@@ -50,30 +49,55 @@ class AIService {
 
         try {
             const output = await this.model(prompt, {
-                max_new_tokens: 40,
-                num_return_sequences: 5,
-                temperature: 0.85, // Balanced for variety
-                top_k: 40,
+                max_new_tokens: 30,
+                num_return_sequences: 8, // Generate 8 variations
+                temperature: 0.9,        // High creativity
+                top_k: 50,
                 do_sample: true
             });
 
             // Deduplicate
             const uniqueSuggestions = [...new Set(output.map(o => o.generated_text))];
 
-            // FILTERING: Remove unhelpful meta-responses from the AI
-            const validSuggestions = uniqueSuggestions.filter(s => {
+            // Filter junk
+            let validSuggestions = uniqueSuggestions.filter(s => {
                 const lower = s.toLowerCase();
                 return !lower.includes("context") &&
                     !lower.includes("sorry") &&
                     !lower.includes("provide") &&
-                    !lower.includes("language model") &&
-                    s.length > 2; // too short is usually junk
+                    s.length > 2 &&
+                    s.split(' ').length < 15;
             });
+
+            // --- GUARANTEED 3 RESULTS LOGIC ---
+            if (validSuggestions.length < 3) {
+                // Strip leading pronouns for cleaner template construction
+                // e.g. "I apple" -> "apple" so we can make "I want apple" instead of "I want I apple"
+                const cleanText = text.replace(/^(i|me|my|you|we|he|she|they)\s+/i, "");
+
+                const fallbacks = [
+                    text, // The raw input is always a valid option
+                    `I want ${cleanText}`,
+                    `Can I have ${cleanText}?`,
+                    `${cleanText} please`,
+                    `It is ${cleanText}`,
+                    `Look at ${cleanText}`
+                ];
+
+                for (const fb of fallbacks) {
+                    if (validSuggestions.length >= 3) break;
+                    // Only add if not already present (case-insensitive check)
+                    if (!validSuggestions.some(s => s.toLowerCase() === fb.toLowerCase())) {
+                        validSuggestions.push(fb);
+                    }
+                }
+            }
 
             return validSuggestions.slice(0, 3);
         } catch (e) {
             console.error("ZipAI: Generation failed", e);
-            return [];
+            // Emergency fallback
+            return [text, `I want ${text}`, `${text} please`];
         }
     }
 }
