@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2, MessageSquarePlus } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { aiService } from '../services/ai';
 
 export default function MagicBar({ sentence, onSelect }) {
