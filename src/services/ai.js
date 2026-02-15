@@ -34,20 +34,29 @@ class AIService {
 
         const text = words.join(" ");
 
-        // "Fix grammar" is often more effective for AAC (Telegraphic -> Natural) than "Expand"
-        // It handles word reordering (Subject-Object-Verb -> Subject-Verb-Object) better.
-        let prompt = `Fix grammar: ${text}`;
+        // 1. Reliability Check: Determine if the user intends a question
+        const questionStarters = ["who", "what", "where", "when", "why", "how", "can", "do", "does", "is", "are", "may", "could", "would"];
+
+        // Check if the FIRST word is a question starter
+        const isQuestion = questionStarters.includes(words[0].toLowerCase());
+
+        let prompt;
+        if (isQuestion) {
+            prompt = `Fix grammar and create a question: ${text}`;
+        } else {
+            // 2. Force Statement: Explicitly ask for a statement to avoid "Do you want..." guessing
+            prompt = `Fix grammar and create a statement: ${text}`;
+        }
 
         if (context) {
-            // Context injection to guide the intent
             prompt = `Context: ${context}. ${prompt}`;
         }
 
         try {
             const output = await this.model(prompt, {
                 max_new_tokens: 30,
-                num_return_sequences: 5, // Increased options to offer more suggestions
-                temperature: 0.75, // Higher creativity for varied suggestions
+                num_return_sequences: 5,
+                temperature: 0.5, // Lowered from 0.75 for higher reliability/consistency
                 do_sample: true
             });
 
