@@ -115,7 +115,7 @@ export default function App() {
   });
 
   const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
-  const [timeContext, setTimeContext] = useState(''); // morning, afternoon, evening
+  const [timeContext, setTimeContext] = useState('');
 
   // --- Effects ---
   useEffect(() => {
@@ -302,20 +302,24 @@ export default function App() {
     }
   };
 
-  // --- Proxy & Search Logic ---
-  const getProxyUrl = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-  const getImageProxyUrl = (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&output=webp`;
-  const getPostProxyUrl = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  // --- Proxy & Search Logic (Cloudflare Pages Functions) ---
+  const getProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
+  const getImageProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
 
   const fetchAuthToken = async () => {
     let secret = config.settings.openSymbolsSecret;
     try { if (import.meta && import.meta.env) { if (!secret) secret = import.meta.env.VITE_OPENSYMBOLS_SECRET || ""; } } catch (e) { }
     if (!secret) throw new Error("Missing Shared Secret. Please add it in Settings.");
     try {
-      const tokenUrl = "https://www.opensymbols.org/api/v2/token";
-      const formData = new URLSearchParams();
+      const tokenUrl = "/api/token";
+      const formData = new FormData();
       formData.append('secret', secret.trim());
-      const proxyRes = await fetch(getPostProxyUrl(tokenUrl), { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData });
+
+      const proxyRes = await fetch(tokenUrl, {
+        method: 'POST',
+        body: formData
+      });
+
       if (!proxyRes.ok) throw new Error(`Auth Failed: ${proxyRes.status}`);
       const data = await proxyRes.json();
       if (data.access_token) return data.access_token;
@@ -330,9 +334,12 @@ export default function App() {
     try {
       let token = accessToken;
       if (!token) { try { token = await fetchAuthToken(); setAccessToken(token); } catch (e) { console.log("Token fetch failed", e); } }
+
       let target = `https://www.opensymbols.org/api/v1/symbols/search?q=${encodeURIComponent(searchQuery)}`;
       if (token) target += `&access_token=${token}`;
+
       const res = await fetch(getProxyUrl(target));
+
       if (!res.ok) throw new Error(`API Error`);
       const data = await res.json();
       if (Array.isArray(data)) setSearchResults(data);

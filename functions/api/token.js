@@ -1,45 +1,36 @@
-/**
- * Cloudflare Function to handle OpenSymbols Authentication
- * This runs on the server side, bypassing CORS restrictions.
- */
-export async function onRequestPost(context) {
+export async function onRequest(context) {
+    if (context.request.method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+    }
+
     try {
-        // 1. Read the secret from the incoming JSON body
-        const { secret } = await context.request.json();
+        const formData = await context.request.formData();
+        const secret = formData.get("secret");
 
         if (!secret) {
-            return new Response(JSON.stringify({ error: "Missing secret" }), {
-                status: 400,
-                headers: { "Content-Type": "application/json" }
-            });
+            return new Response("Missing secret", { status: 400 });
         }
 
-        // 2. Forward the request to OpenSymbols
-        const openSymbolsResponse = await fetch("https://www.opensymbols.org/api/v2/token", {
+        const tokenResponse = await fetch("https://www.opensymbols.org/api/v2/token", {
             method: "POST",
             headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/x-www-form-urlencoded",
             },
-            // OpenSymbols expects form data for the secret
-            body: new URLSearchParams({ secret: secret.trim() })
+            body: new URLSearchParams({ secret }),
         });
 
-        const data = await openSymbolsResponse.json();
+        const data = await tokenResponse.json();
 
-        // 3. Return the result to your app
         return new Response(JSON.stringify(data), {
-            status: openSymbolsResponse.status,
             headers: {
                 "Content-Type": "application/json",
-                // Allow your app to read this response
-                "Access-Control-Allow-Origin": "*"
-            }
+                "Access-Control-Allow-Origin": "*",
+            },
         });
-
-    } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), {
+    } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
         });
     }
 }
