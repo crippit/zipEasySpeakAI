@@ -14,7 +14,7 @@ class AIService {
         if (this.model) return;
         this.isLoading = true;
         try {
-            // LaMini-Flan-T5 is optimized for instruction following and is relatively lightweight
+            // LaMini-Flan-T5 is optimized for instruction following
             this.model = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M');
             console.log("ZipAI: Model Loaded");
         } catch (e) {
@@ -25,27 +25,23 @@ class AIService {
     }
 
     /**
-     * Expands keywords into a full sentence, biased by context.
-     * @param {string[]} words - The keywords (e.g., ["I", "Want"])
-     * @param {string} context - The time context (e.g., "morning", "evening")
+     * Expands keywords into a full sentence.
      */
     async expandSentence(words, context = "") {
         if (!this.model || words.length === 0) return [];
 
         const text = words.join(" ");
 
-        // 1. Reliability Check: Determine if the user intends a question
+        // Reliability Check: Determine if the user intends a question
         const questionStarters = ["who", "what", "where", "when", "why", "how", "can", "do", "does", "is", "are", "may", "could", "would"];
-
-        // Check if the FIRST word is a question starter
         const isQuestion = questionStarters.includes(words[0].toLowerCase());
 
+        // IMPROVED PROMPTS: "Expand" is more directive for AAC than "Fix grammar"
         let prompt;
         if (isQuestion) {
-            prompt = `Fix grammar and create a question: ${text}`;
+            prompt = `Expand to a complete question: ${text}`;
         } else {
-            // 2. Force Statement: Explicitly ask for a statement to avoid "Do you want..." guessing
-            prompt = `Fix grammar and create a statement: ${text}`;
+            prompt = `Expand to a complete sentence: ${text}`;
         }
 
         if (context) {
@@ -56,18 +52,25 @@ class AIService {
             const output = await this.model(prompt, {
                 max_new_tokens: 40,
                 num_return_sequences: 5,
-                // Higher temperature (0.9) and top_k (50) encourage the model to choose different words,
-                // preventing it from generating the exact same "best" sentence 5 times.
-                temperature: 0.9,
-                top_k: 50,
+                temperature: 0.85, // Balanced for variety
+                top_k: 40,
                 do_sample: true
             });
 
-            // Deduplicate and clean results
-            const suggestions = [...new Set(output.map(o => o.generated_text))];
+            // Deduplicate
+            const uniqueSuggestions = [...new Set(output.map(o => o.generated_text))];
 
-            // Return exactly the top 3 unique suggestions
-            return suggestions.slice(0, 3);
+            // FILTERING: Remove unhelpful meta-responses from the AI
+            const validSuggestions = uniqueSuggestions.filter(s => {
+                const lower = s.toLowerCase();
+                return !lower.includes("context") &&
+                    !lower.includes("sorry") &&
+                    !lower.includes("provide") &&
+                    !lower.includes("language model") &&
+                    s.length > 2; // too short is usually junk
+            });
+
+            return validSuggestions.slice(0, 3);
         } catch (e) {
             console.error("ZipAI: Generation failed", e);
             return [];
@@ -77,9 +80,7 @@ class AIService {
 
 export const aiService = new AIService();
 
-// Comprehensive Bigram Map for Next-Word Highlighting
 export const NEXT_WORD_PREDICTIONS = {
-    // Pronouns / Starters
     "i": ["want", "need", "like", "am", "feel", "see", "hear", "can", "will", "don't", "have", "go"],
     "you": ["are", "can", "do", "like", "want", "help", "look", "need", "have", "go"],
     "we": ["are", "can", "go", "want", "play", "need", "have"],
@@ -89,8 +90,6 @@ export const NEXT_WORD_PREDICTIONS = {
     "she": ["is", "wants", "likes", "can", "has"],
     "they": ["are", "want", "like", "can", "have"],
     "me": ["too", "play", "help"],
-
-    // Verbs
     "want": ["to", "more", "pizza", "apple", "cookie", "water", "juice", "toy", "ipad", "book", "music", "help", "that", "it"],
     "need": ["help", "break", "toilet", "water", "more", "food", "medicine", "sleep", "to", "it"],
     "like": ["to", "pizza", "it", "that", "playing", "reading", "watching", "music", "dogs", "cats", "you"],
@@ -111,8 +110,6 @@ export const NEXT_WORD_PREDICTIONS = {
     "read": ["book", "it"],
     "watch": ["tv", "movie", "video", "ipad"],
     "have": ["a", "the", "it", "more"],
-
-    // Prepositions / Little Words
     "to": ["go", "eat", "play", "sleep", "watch", "read", "drink", "the"],
     "in": ["the", "my", "your", "box", "room", "car"],
     "on": ["the", "my", "your", "table", "floor", "chair"],
@@ -123,8 +120,6 @@ export const NEXT_WORD_PREDICTIONS = {
     "my": ["turn", "mom", "dad", "toy", "book", "ipad", "food", "drink"],
     "your": ["turn", "mom", "dad", "toy", "book"],
     "a": ["little", "big", "lot", "good", "bad"],
-
-    // Social / Common Phrases
     "more": ["please", "food", "water", "time", "music", "tickles"],
     "yes": ["please", "i do", "it is", "can i"],
     "no": ["thank you", "stop", "i don't", "it isn't", "way"],
