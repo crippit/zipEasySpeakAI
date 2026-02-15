@@ -54,15 +54,17 @@ class AIService {
 
         try {
             const output = await this.model(prompt, {
-                max_new_tokens: 30,
-                num_return_sequences: 5,
-                temperature: 0.5, // Lowered from 0.75 for higher reliability/consistency
+                max_new_tokens: 35,
+                num_return_sequences: 5, // Generate 5 candidates to ensure we find 3 unique ones
+                temperature: 0.6, // Slightly higher creativity to ensure variety in options
                 do_sample: true
             });
 
-            // Deduplicate and clean results
-            const suggestions = [...new Set(output.map(o => o.generated_text))];
-            return suggestions;
+            // Deduplicate results
+            const uniqueSuggestions = [...new Set(output.map(o => o.generated_text))];
+
+            // Return exactly the top 3 unique suggestions
+            return uniqueSuggestions.slice(0, 3);
         } catch (e) {
             console.error("ZipAI: Generation failed", e);
             return [];

@@ -522,7 +522,7 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Time Context Indicator - Made visible on mobile (removed 'hidden md:flex') */}
+              {/* Time Context Indicator */}
               <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white">
                 {timeContext === 'morning' && <><Sun size={14} className="text-orange-500" /> Morning</>}
                 {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600" /> Afternoon</>}
