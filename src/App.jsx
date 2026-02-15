@@ -308,7 +308,7 @@ export default function App() {
 
   const fetchAuthToken = async () => {
     let secret = config.settings.openSymbolsSecret;
-    try { if (import.meta && import.meta.env) { if (!secret) secret = import.meta.env.VITE_OPENSYMBOLS_SECRET || ""; } } catch (e) { }
+    try { if (import.meta && import.meta.env) { if (!secret) secret = import.meta.env.VITE_OPENSYMBOLS_TOKEN || ""; } } catch (e) { }
     if (!secret) throw new Error("Missing Shared Secret. Please add it in Settings.");
     try {
       const tokenUrl = "/api/token";
