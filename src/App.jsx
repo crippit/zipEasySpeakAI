@@ -35,7 +35,9 @@ import {
   Sparkles,
   Sun,
   Moon,
-  Sunset
+  Sunset,
+  MapPin,
+  BrainCircuit
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
@@ -44,6 +46,22 @@ import { NEXT_WORD_PREDICTIONS } from './services/ai';
  * Zip EasySpeak AAC
  * Developed by Zip Solutions
  */
+
+// --- Constants ---
+const LOCATIONS = [
+  { id: 'home', label: 'Home', icon: '🏠' },
+  { id: 'school', label: 'School', icon: '🏫' },
+  { id: 'work', label: 'Work', icon: '💼' },
+  { id: 'restaurant', label: 'Restaurant', icon: '🍽️' },
+  { id: 'outside', label: 'Outside', icon: '🌳' },
+  { id: 'store', label: 'Store', icon: '🛒' },
+  { id: 'hospital', label: 'Hospital', icon: '🏥' },
+  { id: 'hotel', label: 'Hotel', icon: '🏨' },
+  { id: 'airport', label: 'Airport', icon: '✈️' },
+  { id: 'train', label: 'Train Station', icon: '🚆' },
+  { id: 'transport', label: 'Transport', icon: '🚌' },
+  { id: 'conference', label: 'Conference', icon: '🎤' },
+];
 
 // --- Default Configuration Data ---
 const DEFAULT_CONFIG = {
@@ -58,6 +76,7 @@ const DEFAULT_CONFIG = {
     gridSize: "auto",
     offlineOnly: false,
     enableSentenceBuilder: true,
+    enableTimeContext: true, // NEW: Allow toggling time detection
     speakOnSelect: false,
     showLabels: true,
   },
@@ -115,7 +134,10 @@ export default function App() {
   });
 
   const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
-  const [timeContext, setTimeContext] = useState('');
+  
+  // Context States
+  const [timeContext, setTimeContext] = useState(''); 
+  const [locationContext, setLocationContext] = useState('Home');
 
   // --- Effects ---
   useEffect(() => {
@@ -125,20 +147,27 @@ export default function App() {
   // Time of Day Detection
   useEffect(() => {
     const updateTimeContext = () => {
-      const h = new Date().getHours();
-      if (h >= 5 && h < 12) setTimeContext('morning');
-      else if (h >= 12 && h < 18) setTimeContext('afternoon');
-      else setTimeContext('evening');
+        // If disabled in settings, clear context
+        if (!config.settings.enableTimeContext) {
+            setTimeContext('');
+            return;
+        }
+
+        const h = new Date().getHours();
+        if (h >= 5 && h < 12) setTimeContext('morning');
+        else if (h >= 12 && h < 18) setTimeContext('afternoon');
+        else setTimeContext('evening');
     };
+    
     updateTimeContext();
-    const interval = setInterval(updateTimeContext, 60000 * 30); // Check every 30 mins
+    const interval = setInterval(updateTimeContext, 60000 * 5); // Check every 5 mins
     return () => clearInterval(interval);
-  }, []);
+  }, [config.settings.enableTimeContext]); // Re-run when setting changes
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
-  const [sentence, setSentence] = useState([]);
-  const [accessToken, setAccessToken] = useState(null);
+  const [sentence, setSentence] = useState([]); 
+  const [accessToken, setAccessToken] = useState(null); 
 
   // --- UI State ---
   const [showSettings, setShowSettings] = useState(false);
@@ -212,10 +241,18 @@ export default function App() {
     const fullText = sentence.map(t => t.phrase).join(" ");
     speak(fullText);
   };
-
+  
   const speakMagicPrediction = (text) => speak(text);
   const clearSentence = () => setSentence([]);
   const removeLastWord = () => setSentence(prev => prev.slice(0, -1));
+
+  // --- Helpers ---
+  const getFullContext = () => {
+      let parts = [];
+      if (timeContext) parts.push(timeContext);
+      if (locationContext) parts.push(`at ${locationContext}`);
+      return parts.join(' ');
+  };
 
   // --- Import/Export ---
   const downloadJSON = (data, filename) => {
@@ -314,12 +351,12 @@ export default function App() {
       const tokenUrl = "/api/token";
       const formData = new FormData();
       formData.append('secret', secret.trim());
-
-      const proxyRes = await fetch(tokenUrl, {
-        method: 'POST',
-        body: formData
+      
+      const proxyRes = await fetch(tokenUrl, { 
+          method: 'POST', 
+          body: formData 
       });
-
+      
       if (!proxyRes.ok) throw new Error(`Auth Failed: ${proxyRes.status}`);
       const data = await proxyRes.json();
       if (data.access_token) return data.access_token;
@@ -334,12 +371,12 @@ export default function App() {
     try {
       let token = accessToken;
       if (!token) { try { token = await fetchAuthToken(); setAccessToken(token); } catch (e) { console.log("Token fetch failed", e); } }
-
+      
       let target = `https://www.opensymbols.org/api/v1/symbols/search?q=${encodeURIComponent(searchQuery)}`;
       if (token) target += `&access_token=${token}`;
-
+      
       const res = await fetch(getProxyUrl(target));
-
+      
       if (!res.ok) throw new Error(`API Error`);
       const data = await res.json();
       if (Array.isArray(data)) setSearchResults(data);
@@ -515,31 +552,41 @@ export default function App() {
             </div>
           )}
 
-          {/* --- NEW: Magic Bar --- */}
+          {/* --- NEW: Magic Bar with combined Context --- */}
           {config.settings.enableSentenceBuilder && (
-            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} context={timeContext} />
+            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} context={getFullContext()} />
           )}
 
-          {/* Page Info & Time Context */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          {/* Page Info & Time/Location Context */}
+          <div className="flex items-center justify-between gap-2 overflow-hidden">
+            <div className="flex items-center gap-3 shrink-0">
               <img src="/pwa-192x192.png" alt="Logo" className="md:hidden w-8 h-8 rounded-lg shadow-sm object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
-              <h1 className="text-3xl font-bold flex items-center gap-2">{activePage.icon} {activePage.label}</h1>
+              <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">{activePage.icon} {activePage.label}</h1>
               {isEditMode && <button onClick={() => setEditingPage(activePage)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500"><Edit2 size={16} /></button>}
             </div>
+            
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                
+                {/* Location Selector (NEW) */}
+                <div className="flex items-center bg-white/60 rounded-full px-3 py-1.5 border border-white shrink-0">
+                    <MapPin size={14} className="text-red-500 mr-2" />
+                    <select
+                        value={locationContext}
+                        onChange={(e) => setLocationContext(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-slate-700 outline-none appearance-none cursor-pointer"
+                    >
+                        {LOCATIONS.map(loc => <option key={loc.id} value={loc.label}>{loc.icon} {loc.label}</option>)}
+                    </select>
+                </div>
 
-            <div className="flex items-center gap-2">
-              {/* Time Context Indicator */}
-              <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white">
-                {timeContext === 'morning' && <><Sun size={14} className="text-orange-500" /> Morning</>}
-                {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600" /> Afternoon</>}
-                {timeContext === 'evening' && <><Sunset size={14} className="text-indigo-500" /> Evening</>}
-              </div>
-
-              {/* Mode Indicator */}
-              <div className="hidden md:flex items-center gap-2 bg-white/60 px-4 py-2 rounded-full text-xs text-slate-500 font-bold">
-                {config.settings.enableSentenceBuilder ? 'MODE: SENTENCE' : 'MODE: DIRECT'}
-              </div>
+                {/* Time Context Indicator (Conditional) */}
+                {timeContext && (
+                    <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white shrink-0">
+                        {timeContext === 'morning' && <><Sun size={14} className="text-orange-500"/> Morning</>}
+                        {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600"/> Afternoon</>}
+                        {timeContext === 'evening' && <><Sunset size={14} className="text-indigo-500"/> Evening</>}
+                    </div>
+                )}
             </div>
           </div>
         </div>
@@ -556,9 +603,9 @@ export default function App() {
           )}
         </div>
       </main>
-
+      
       {/* ... (Existing Modals: Edit Tile, Search, PIN, etc. remain unchanged) ... */}
-
+      
       {/* Edit Tile Modal */}
       {editingTile && !showImageSearch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -811,6 +858,22 @@ export default function App() {
 
             <hr className="border-slate-100" />
 
+            {/* NEW: AI & Context Settings */}
+            <section>
+              <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><BrainCircuit size={16} /> AI & Context</h3>
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-sm">Auto Time Context</div>
+                    <p className="text-xs text-slate-500">Detect Morning/Evening automatically</p>
+                  </div>
+                  <input type="checkbox" checked={config.settings.enableTimeContext} onChange={e => updateSetting('enableTimeContext', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                </div>
+              </div>
+            </section>
+
+            <hr className="border-slate-100" />
+
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><Volume2 size={16} /> Speech</h3>
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4 flex items-center justify-between">
@@ -904,3 +967,5 @@ export default function App() {
     </div>
   );
 }
+
+
