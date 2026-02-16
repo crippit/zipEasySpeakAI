@@ -8,21 +8,18 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Force the standard filename for better detection
-      manifestFilename: 'manifest.json',
-      // Precache the icons
-      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
+      // Removed favicon.ico, using the PNGs from public folder instead
+      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'mask-icon.svg'],
       manifest: {
         name: 'Zip EasySpeak AI',
-        short_name: 'EasySpeak',
-        description: 'An AI-powered AAC tool for accessible communication.',
+        short_name: 'EasySpeakAI',
+        description: 'A free AAC dashboard by Zip Solutions',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'any',
         scope: '/',
         start_url: '/',
-        id: '/',
+        orientation: 'any',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -39,6 +36,43 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
+          }
+        ]
+         screenshots: [
+          {
+            src: 'Screenshot_mobile_1.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_mobile_2.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_mobile_3.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_mobile_4.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_Desktop_1.png',
+            sizes: '3292x1974',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Easy Speak on Desktop'
           }
         ]
       }
