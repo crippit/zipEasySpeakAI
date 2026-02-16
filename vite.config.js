@@ -8,22 +8,21 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Allow PWA to work in development mode (npm run dev)
-      devOptions: {
-        enabled: true
-      },
-      // Removed favicon.ico, using the PNGs from public folder instead
-      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'mask-icon.svg'],
+      // Force the standard filename for better detection
+      manifestFilename: 'manifest.json',
+      // Precache the icons
+      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'Zip EasySpeak',
+        name: 'Zip EasySpeak AI',
         short_name: 'EasySpeak',
-        description: 'A free AAC dashboard by Zip Solutions',
+        description: 'An AI-powered AAC tool for accessible communication.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
+        orientation: 'any',
         scope: '/',
         start_url: '/',
-        orientation: 'any',
+        id: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
