@@ -286,7 +286,9 @@ export default function App() {
           if (prev.length === 0) return prev;
           const newArr = [...prev];
           const last = newArr[newArr.length - 1];
-          if (last.isTyped) {
+          if (last && last.isTyped) {
+            // Speak the completed word!
+            speak(last.phrase);
             last.isTyped = false; // Mark as "done" so next letter starts new word
           }
           return newArr;
@@ -320,8 +322,9 @@ export default function App() {
           setSentence(prev => [...prev, tile]);
         }
 
+        // Speak on select only if enabled (feedback for letter press)
         if (config.settings.speakOnSelect) {
-          speak(tile.phrase); // Speak the letter for feedback
+          speak(tile.phrase);
         }
       }
     }
