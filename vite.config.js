@@ -29,6 +29,7 @@ export default defineConfig({
         scope: '/',
         start_url: '/',
         orientation: 'any',
+        id: "https://easyspeakai.zipsolutions.org",
         icons: [
           {
             src: 'pwa-192x192.png',
