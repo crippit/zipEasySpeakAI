@@ -379,8 +379,7 @@ export default function App() {
   // --- Drag and Drop Handlers ---
   const handleDragStart = (e, item, type) => {
     if (!isEditMode) return;
-    // CRITICAL FIX: setData allows drag to proceed on Firefox/standard compliance
-    e.dataTransfer.setData('text/plain', item.id);
+    e.dataTransfer.setData('text/plain', item.id); // Essential for some browsers
     e.dataTransfer.effectAllowed = 'move';
     if (type === 'tile') {
       setDraggedTile(item);
@@ -391,14 +390,14 @@ export default function App() {
 
   const handleDragOver = (e) => {
     if (!isEditMode) return;
-    e.preventDefault(); // Essential for allowing drop
+    e.preventDefault(); // Necessary to allow dropping
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleTileDrop = (e, targetTile) => {
     if (!isEditMode || !draggedTile || draggedTile.id === targetTile.id) return;
     e.preventDefault();
-    e.stopPropagation(); // Stop bubbling
+    e.stopPropagation();
 
     setConfig(prev => {
       const newPages = prev.pages.map(page => {
@@ -408,9 +407,9 @@ export default function App() {
           const targetIndex = tiles.findIndex(t => t.id === targetTile.id);
 
           if (draggedIndex !== -1 && targetIndex !== -1) {
-            // Remove dragged item
+            // Remove from old position
             const [movedItem] = tiles.splice(draggedIndex, 1);
-            // Insert at new index
+            // Insert at new position
             tiles.splice(targetIndex, 0, movedItem);
             return { ...page, tiles };
           }
@@ -896,6 +895,93 @@ export default function App() {
                 </div>
               </div>
               <button onClick={() => updateTile(editingTile)} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl mt-2">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Search Modal */}
+      {showImageSearch && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col relative overflow-hidden">
+
+            {/* Loading Overlay */}
+            {isDownloading && (
+              <div className="absolute inset-0 z-[70] bg-white/80 flex flex-col items-center justify-center">
+                <Loader2 size={64} className="animate-spin text-blue-600 mb-4" />
+                <h3 className="text-xl font-bold text-slate-700">Downloading Image...</h3>
+                <p className="text-sm text-slate-500">Please wait while we save it offline.</p>
+              </div>
+            )}
+
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-lg flex items-center gap-2"><Search size={20} className="text-blue-600" /> Search Symbols</h3>
+              <button onClick={() => setShowImageSearch(false)}><X size={20} /></button>
+            </div>
+            <div className="p-4 border-b bg-white">
+              <div className="flex gap-2">
+                <input type="text" autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && searchSymbols()} placeholder="Search..." className="flex-1 p-3 border rounded-xl" />
+                <button onClick={searchSymbols} disabled={isSearching} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl disabled:opacity-50">{isSearching ? <Loader2 className="animate-spin" /> : "Search"}</button>
+              </div>
+              <div className="text-xs text-slate-400 mt-2 text-center">Click an image to select it. Images are saved offline.</div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+              {Array.isArray(searchResults) && searchResults.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {searchResults.map((result) => (
+                    <button key={result.id || result.image_url} onClick={() => selectSymbol(result.image_url)} className="aspect-square bg-white rounded-xl shadow-sm border p-2 flex flex-col items-center justify-center hover:ring-2 hover:ring-blue-200 focus:ring-2 focus:ring-blue-400 outline-none">
+                      <img src={result.image_url} alt="symbol" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400"><ImageIcon size={48} className="mb-2 opacity-20" /><p>No symbols found yet.</p><p className="text-sm">Try typing a word above.</p></div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Page Modal */}
+      {editingPage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-lg">Edit Page</h3>
+              <button onClick={() => { setEditingPage(null); setDeleteConfirm(false); }}><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Name</label>
+                <input type="text" value={editingPage.label} onChange={e => setEditingPage({ ...editingPage, label: e.target.value })} className="w-full p-3 border rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Icon</label>
+                  <input type="text" value={editingPage.icon} onChange={e => setEditingPage({ ...editingPage, icon: e.target.value })} className="w-full p-3 border rounded-lg text-center" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Theme</label>
+                  <select value={editingPage.color} onChange={e => setEditingPage({ ...editingPage, color: e.target.value })} className="w-full p-3 border rounded-lg bg-white">
+                    <option value="bg-slate-100">Gray</option>
+                    <option value="bg-blue-50">Blue</option>
+                    <option value="bg-green-50">Green</option>
+                    <option value="bg-purple-50">Purple</option>
+                    <option value="bg-orange-50">Orange</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                {deleteConfirm ? (
+                  <div className="flex flex-1 gap-2">
+                    <button onClick={() => deletePage(editingPage.id)} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl">Confirm</button>
+                    <button onClick={() => setDeleteConfirm(false)} className="px-4 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl">Cancel</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setDeleteConfirm(true)} disabled={config.pages.length <= 1} className="flex-1 py-3 bg-red-100 text-red-600 font-bold rounded-xl disabled:opacity-50">Delete</button>
+                )}
+                {!deleteConfirm && <button onClick={() => updatePage(editingPage)} className="flex-[2] py-3 bg-blue-600 text-white font-bold rounded-xl">Save</button>}
+              </div>
             </div>
           </div>
         </div>
