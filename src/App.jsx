@@ -37,7 +37,8 @@ import {
   Moon,
   Sunset,
   MapPin,
-  BrainCircuit
+  BrainCircuit,
+  GripVertical
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
@@ -178,6 +179,10 @@ export default function App() {
   // Context States
   const [timeContext, setTimeContext] = useState('');
   const [locationContext, setLocationContext] = useState('Home');
+
+  // Drag and Drop States
+  const [draggedTile, setDraggedTile] = useState(null);
+  const [draggedPage, setDraggedPage] = useState(null);
 
   // --- Effects ---
   useEffect(() => {
@@ -369,6 +374,65 @@ export default function App() {
     if (timeContext) parts.push(timeContext);
     if (locationContext) parts.push(`at ${locationContext}`);
     return parts.join(' ');
+  };
+
+  // --- Drag and Drop Handlers ---
+  const handleDragStart = (e, item, type) => {
+    if (!isEditMode) return;
+    e.dataTransfer.effectAllowed = 'move';
+    if (type === 'tile') {
+      setDraggedTile(item);
+    } else if (type === 'page') {
+      setDraggedPage(item);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    if (!isEditMode) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleTileDrop = (e, targetTile) => {
+    if (!isEditMode || !draggedTile || draggedTile.id === targetTile.id) return;
+    e.preventDefault();
+
+    setConfig(prev => {
+      const newPages = prev.pages.map(page => {
+        if (page.id === activePageId) {
+          const tiles = [...page.tiles];
+          const draggedIndex = tiles.findIndex(t => t.id === draggedTile.id);
+          const targetIndex = tiles.findIndex(t => t.id === targetTile.id);
+
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+            tiles.splice(draggedIndex, 1);
+            tiles.splice(targetIndex, 0, draggedTile);
+            return { ...page, tiles };
+          }
+        }
+        return page;
+      });
+      return { ...prev, pages: newPages };
+    });
+    setDraggedTile(null);
+  };
+
+  const handlePageDrop = (e, targetPage) => {
+    if (!isEditMode || !draggedPage || draggedPage.id === targetPage.id) return;
+    e.preventDefault();
+
+    setConfig(prev => {
+      const pages = [...prev.pages];
+      const draggedIndex = pages.findIndex(p => p.id === draggedPage.id);
+      const targetIndex = pages.findIndex(p => p.id === targetPage.id);
+
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        pages.splice(draggedIndex, 1);
+        pages.splice(targetIndex, 0, draggedPage);
+      }
+      return { ...prev, pages };
+    });
+    setDraggedPage(null);
   };
 
   // --- Import/Export ---
@@ -578,12 +642,17 @@ export default function App() {
     const isPredicted = !editMode && getIsPredicted(tile.phrase);
     return (
       <div
+        draggable={editMode}
+        onDragStart={(e) => handleDragStart(e, tile, 'tile')}
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleTileDrop(e, tile)}
         onClick={() => !editMode && onClick(tile)}
         className={`relative group flex flex-col items-center justify-center aspect-square rounded-2xl shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
         ${isPredicted ? 'ring-4 ring-yellow-400 ring-offset-2 z-10 scale-105' : ''}
+        ${editMode ? 'cursor-grab active:cursor-grabbing' : ''}
         `}
       >
-        <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1">
+        <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 pointer-events-none">
           {tile.type === 'image' ? (
             <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
           ) : (
@@ -591,19 +660,23 @@ export default function App() {
           )}
         </div>
         {showLabels && (
-          <div className="w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 text-sm md:text-base truncate flex items-center justify-center gap-1">
+          <div className="w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 text-sm md:text-base truncate flex items-center justify-center gap-1 pointer-events-none">
             {tile.label}
             {tile.linkToPage && <ArrowRightCircle size={12} className="text-blue-600 opacity-70" />}
             {tile.isSilent && editMode && <VolumeX size={12} className="text-red-500 opacity-70" />}
           </div>
         )}
         {isPredicted && (
-          <div className="absolute top-2 right-2 text-yellow-600 animate-pulse">
+          <div className="absolute top-2 right-2 text-yellow-600 animate-pulse pointer-events-none">
             <Sparkles size={20} fill="currentColor" />
           </div>
         )}
         {editMode && (
           <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            {/* Drag Handle Indicator */}
+            <div className="absolute top-2 left-2 p-1 bg-white/50 rounded text-slate-600 cursor-grab">
+              <GripVertical size={16} />
+            </div>
             <button onClick={(e) => { e.stopPropagation(); setEditingTile(tile); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 text-blue-600 mr-2"><Edit2 size={20} /></button>
             <button onClick={(e) => { e.stopPropagation(); deleteTile(tile.id); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-red-50 text-red-600"><Trash2 size={20} /></button>
           </div>
@@ -623,10 +696,24 @@ export default function App() {
         </div>
         <div className="p-2 md:p-4 flex md:flex-col items-center gap-2">
           {config.pages.map(page => (
-            <button key={page.id} onClick={() => setActivePageId(page.id)} className={`flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 text-white shadow-md scale-105' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>
-              <span className="text-2xl mb-1">{page.icon}</span>
-              <span className="text-[10px] font-bold truncate max-w-full leading-tight">{page.label}</span>
-            </button>
+            <div
+              key={page.id}
+              draggable={isEditMode}
+              onDragStart={(e) => handleDragStart(e, page, 'page')}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handlePageDrop(e, page)}
+              className="relative"
+            >
+              <button onClick={() => setActivePageId(page.id)} className={`flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 text-white shadow-md scale-105' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'} ${isEditMode ? 'cursor-grab' : ''}`}>
+                <span className="text-2xl mb-1">{page.icon}</span>
+                <span className="text-[10px] font-bold truncate max-w-full leading-tight">{page.label}</span>
+              </button>
+              {isEditMode && (
+                <div className="absolute top-0 right-0 p-1 bg-white/80 rounded-full shadow-sm pointer-events-none">
+                  <GripVertical size={12} className="text-slate-400" />
+                </div>
+              )}
+            </div>
           ))}
           {isEditMode && (
             <button onClick={addPage} className="flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 bg-green-100 text-green-700 hover:bg-green-200 border-2 border-dashed border-green-300">
