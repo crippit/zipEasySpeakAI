@@ -37,45 +37,45 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           }
-        ],,
-      screenshots: [
-        {
-          src: 'Screenshot_Mobile_1.png',
-          sizes: '1075x2393',
-          type: 'image/png',
-          form_factor: 'narrow',
-          label: 'Easy Speak on Mobile'
-        },
-        {
-          src: 'Screenshot_Mobile_2.png',
-          sizes: '1075x2393',
-          type: 'image/png',
-          form_factor: 'narrow',
-          label: 'Easy Speak on Mobile'
-        },
-        {
-          src: 'Screenshot_Mobile_3.png',
-          sizes: '1075x2393',
-          type: 'image/png',
-          form_factor: 'narrow',
-          label: 'Easy Speak on Mobile'
-        },
-        {
-          src: 'Screenshot_Mobile_4.png',
-          sizes: '1075x2393',
-          type: 'image/png',
-          form_factor: 'narrow',
-          label: 'Easy Speak on Mobile'
-        },
-        {
-          src: 'Screenshot_Desktop_1.png',
-          sizes: '3292x1974',
-          type: 'image/png',
-          form_factor: 'wide',
-          label: 'Easy Speak on Desktop'
-        }
-      ]
-    }
+        ],
+        screenshots: [
+          {
+            src: 'Screenshot_Mobile_1.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_Mobile_2.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_Mobile_3.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_Mobile_4.png',
+            sizes: '1075x2393',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Easy Speak on Mobile'
+          },
+          {
+            src: 'Screenshot_Desktop_1.png',
+            sizes: '3292x1974',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Easy Speak on Desktop'
+          }
+        ]
+      }
     })
   ],
 })
