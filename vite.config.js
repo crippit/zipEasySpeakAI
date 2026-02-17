@@ -8,8 +8,17 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'generateSW',
+      // Force the standard filename for better detection
+      manifestFilename: 'manifest.json',
       // Removed favicon.ico, using the PNGs from public folder instead
       includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'mask-icon.svg'],
+      workbox: {
+        // Increase cache limit to 4MB to ensure the large app bundle 
+        // (including AI logic and UI libraries) is successfully cached for offline use.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        navigateFallback: '/index.html',
+      },
       manifest: {
         name: 'Zip EasySpeak AI',
         short_name: 'EasySpeakAI',
