@@ -76,7 +76,7 @@ const DEFAULT_CONFIG = {
     gridSize: "auto",
     offlineOnly: false,
     enableSentenceBuilder: true,
-    enableTimeContext: true, // NEW: Allow toggling time detection
+    enableTimeContext: true,
     speakOnSelect: false,
     showLabels: true,
   },
@@ -93,6 +93,46 @@ const DEFAULT_CONFIG = {
         { id: "t4", label: "More", phrase: "more", image: "➕", type: "emoji", color: "bg-blue-200", linkToPage: "", isSilent: false },
         { id: "t5", label: "Yes", phrase: "Yes", image: "👍", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
         { id: "t6", label: "No", phrase: "No", image: "👎", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
+        { id: "t_kb_link", label: "Type", phrase: "", image: "⌨️", type: "emoji", color: "bg-slate-200", linkToPage: "p_qwerty_full", isSilent: true },
+      ]
+    },
+    {
+      id: "p_qwerty_full",
+      label: "Keyboard",
+      icon: "⌨️",
+      color: "bg-slate-100",
+      tiles: [
+        { "id": "t_q", "label": "Q", "phrase": "Q", "image": "Q", "type": "emoji", "color": "bg-white" },
+        { "id": "t_w", "label": "W", "phrase": "W", "image": "W", "type": "emoji", "color": "bg-white" },
+        { "id": "t_e", "label": "E", "phrase": "E", "image": "E", "type": "emoji", "color": "bg-white" },
+        { "id": "t_r", "label": "R", "phrase": "R", "image": "R", "type": "emoji", "color": "bg-white" },
+        { "id": "t_t", "label": "T", "phrase": "T", "image": "T", "type": "emoji", "color": "bg-white" },
+        { "id": "t_y", "label": "Y", "phrase": "Y", "image": "Y", "type": "emoji", "color": "bg-white" },
+        { "id": "t_u", "label": "U", "phrase": "U", "image": "U", "type": "emoji", "color": "bg-white" },
+        { "id": "t_i", "label": "I", "phrase": "I", "image": "I", "type": "emoji", "color": "bg-white" },
+        { "id": "t_o", "label": "O", "phrase": "O", "image": "O", "type": "emoji", "color": "bg-white" },
+        { "id": "t_p", "label": "P", "phrase": "P", "image": "P", "type": "emoji", "color": "bg-white" },
+        { "id": "t_a", "label": "A", "phrase": "A", "image": "A", "type": "emoji", "color": "bg-white" },
+        { "id": "t_s", "label": "S", "phrase": "S", "image": "S", "type": "emoji", "color": "bg-white" },
+        { "id": "t_d", "label": "D", "phrase": "D", "image": "D", "type": "emoji", "color": "bg-white" },
+        { "id": "t_f", "label": "F", "phrase": "F", "image": "F", "type": "emoji", "color": "bg-white" },
+        { "id": "t_g", "label": "G", "phrase": "G", "image": "G", "type": "emoji", "color": "bg-white" },
+        { "id": "t_h", "label": "H", "phrase": "H", "image": "H", "type": "emoji", "color": "bg-white" },
+        { "id": "t_j", "label": "J", "phrase": "J", "image": "J", "type": "emoji", "color": "bg-white" },
+        { "id": "t_k", "label": "K", "phrase": "K", "image": "K", "type": "emoji", "color": "bg-white" },
+        { "id": "t_l", "label": "L", "phrase": "L", "image": "L", "type": "emoji", "color": "bg-white" },
+        { "id": "t_z", "label": "Z", "phrase": "Z", "image": "Z", "type": "emoji", "color": "bg-white" },
+        { "id": "t_x", "label": "X", "phrase": "X", "image": "X", "type": "emoji", "color": "bg-white" },
+        { "id": "t_c", "label": "C", "phrase": "C", "image": "C", "type": "emoji", "color": "bg-white" },
+        { "id": "t_v", "label": "V", "phrase": "V", "image": "V", "type": "emoji", "color": "bg-white" },
+        { "id": "t_b", "label": "B", "phrase": "B", "image": "B", "type": "emoji", "color": "bg-white" },
+        { "id": "t_n", "label": "N", "phrase": "N", "image": "N", "type": "emoji", "color": "bg-white" },
+        { "id": "t_m", "label": "M", "phrase": "M", "image": "M", "type": "emoji", "color": "bg-white" },
+        { "id": "t_space", "label": "Space", "phrase": " ", "image": "␣", "type": "emoji", "color": "bg-yellow-200" },
+        { "id": "t_period", "label": ".", "phrase": ".", "image": ".", "type": "emoji", "color": "bg-yellow-200" },
+        { "id": "t_question", "label": "?", "phrase": "?", "image": "?", "type": "emoji", "color": "bg-yellow-200" },
+        { "id": "t_backspace", "label": "Delete", "phrase": "Delete", "image": "⌫", "type": "emoji", "color": "bg-red-200" },
+        { "id": "t_back_home", "label": "Home", "phrase": "", "image": "🏠", "type": "emoji", "color": "bg-blue-100", "linkToPage": "p_core", "isSilent": true }
       ]
     },
     {
@@ -134,9 +174,9 @@ export default function App() {
   });
 
   const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
-  
+
   // Context States
-  const [timeContext, setTimeContext] = useState(''); 
+  const [timeContext, setTimeContext] = useState('');
   const [locationContext, setLocationContext] = useState('Home');
 
   // --- Effects ---
@@ -147,18 +187,18 @@ export default function App() {
   // Time of Day Detection
   useEffect(() => {
     const updateTimeContext = () => {
-        // If disabled in settings, clear context
-        if (!config.settings.enableTimeContext) {
-            setTimeContext('');
-            return;
-        }
+      // If disabled in settings, clear context
+      if (!config.settings.enableTimeContext) {
+        setTimeContext('');
+        return;
+      }
 
-        const h = new Date().getHours();
-        if (h >= 5 && h < 12) setTimeContext('morning');
-        else if (h >= 12 && h < 18) setTimeContext('afternoon');
-        else setTimeContext('evening');
+      const h = new Date().getHours();
+      if (h >= 5 && h < 12) setTimeContext('morning');
+      else if (h >= 12 && h < 18) setTimeContext('afternoon');
+      else setTimeContext('evening');
     };
-    
+
     updateTimeContext();
     const interval = setInterval(updateTimeContext, 60000 * 5); // Check every 5 mins
     return () => clearInterval(interval);
@@ -166,8 +206,8 @@ export default function App() {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
-  const [sentence, setSentence] = useState([]); 
-  const [accessToken, setAccessToken] = useState(null); 
+  const [sentence, setSentence] = useState([]);
+  const [accessToken, setAccessToken] = useState(null);
 
   // --- UI State ---
   const [showSettings, setShowSettings] = useState(false);
@@ -215,7 +255,78 @@ export default function App() {
 
   const handleTileClick = (tile) => {
     const isSilent = tile.isSilent === true;
-    if (!isSilent) {
+    const isKeyboardPage = activePage.id.includes('qwerty') || activePage.label.toLowerCase().includes('keyboard');
+
+    // --- KEYBOARD LOGIC ---
+    if (isKeyboardPage) {
+      // 1. Handle Backspace (Character by Character deletion)
+      if (tile.id === 't_backspace') {
+        setSentence(prev => {
+          if (prev.length === 0) return prev;
+          const newArr = [...prev];
+          const lastIndex = newArr.length - 1;
+          const last = newArr[lastIndex];
+
+          // If deleting from a typed word, remove last char
+          if (last.isTyped && last.phrase.length > 0) {
+            const newText = last.phrase.slice(0, -1);
+            if (newText.length === 0) return newArr.slice(0, -1); // Remove entirely if empty
+            newArr[lastIndex] = { ...last, label: newText, phrase: newText };
+            return newArr;
+          }
+          // Otherwise delete whole tile (standard behavior)
+          return newArr.slice(0, -1);
+        });
+        return;
+      }
+
+      // 2. Handle Space (Commits the word)
+      if (tile.id === 't_space') {
+        setSentence(prev => {
+          if (prev.length === 0) return prev;
+          const newArr = [...prev];
+          const last = newArr[newArr.length - 1];
+          if (last.isTyped) {
+            last.isTyped = false; // Mark as "done" so next letter starts new word
+          }
+          return newArr;
+        });
+        return;
+      }
+
+      // 3. Handle Letters (Merges into one tile)
+      if (!isSilent) {
+        // Check if it's a character tile (length 1)
+        if (tile.phrase.length === 1 || tile.id.startsWith('t_')) {
+          setSentence(prev => {
+            const newArr = [...prev];
+            const lastIndex = newArr.length - 1;
+
+            // If last item was also typed and not committed, append to it
+            if (lastIndex >= 0 && newArr[lastIndex].isTyped) {
+              const last = newArr[lastIndex];
+              newArr[lastIndex] = {
+                ...last,
+                label: last.label + tile.label,
+                phrase: last.phrase + tile.phrase
+              };
+              return newArr;
+            }
+            // Otherwise start a new typed word
+            return [...prev, { ...tile, isTyped: true }];
+          });
+        } else {
+          // Non-character tile on keyboard page (if any)
+          setSentence(prev => [...prev, tile]);
+        }
+
+        if (config.settings.speakOnSelect) {
+          speak(tile.phrase); // Speak the letter for feedback
+        }
+      }
+    }
+    // --- STANDARD LOGIC ---
+    else if (!isSilent) {
       if (config.settings.enableSentenceBuilder) {
         setSentence(prev => [...prev, tile]);
         if (config.settings.speakOnSelect) speak(tile.phrase);
@@ -223,9 +334,12 @@ export default function App() {
         speak(tile.phrase);
       }
     }
+
     if (tile.linkToPage && tile.linkToPage !== "") {
       const targetPage = config.pages.find(p => p.id === tile.linkToPage);
-      if (targetPage) setActivePageId(targetPage.id);
+      if (targetPage) {
+        setActivePageId(targetPage.id);
+      }
     }
   };
 
@@ -241,17 +355,17 @@ export default function App() {
     const fullText = sentence.map(t => t.phrase).join(" ");
     speak(fullText);
   };
-  
+
   const speakMagicPrediction = (text) => speak(text);
   const clearSentence = () => setSentence([]);
   const removeLastWord = () => setSentence(prev => prev.slice(0, -1));
 
   // --- Helpers ---
   const getFullContext = () => {
-      let parts = [];
-      if (timeContext) parts.push(timeContext);
-      if (locationContext) parts.push(`at ${locationContext}`);
-      return parts.join(' ');
+    let parts = [];
+    if (timeContext) parts.push(timeContext);
+    if (locationContext) parts.push(`at ${locationContext}`);
+    return parts.join(' ');
   };
 
   // --- Import/Export ---
@@ -351,12 +465,12 @@ export default function App() {
       const tokenUrl = "/api/token";
       const formData = new FormData();
       formData.append('secret', secret.trim());
-      
-      const proxyRes = await fetch(tokenUrl, { 
-          method: 'POST', 
-          body: formData 
+
+      const proxyRes = await fetch(tokenUrl, {
+        method: 'POST',
+        body: formData
       });
-      
+
       if (!proxyRes.ok) throw new Error(`Auth Failed: ${proxyRes.status}`);
       const data = await proxyRes.json();
       if (data.access_token) return data.access_token;
@@ -371,12 +485,12 @@ export default function App() {
     try {
       let token = accessToken;
       if (!token) { try { token = await fetchAuthToken(); setAccessToken(token); } catch (e) { console.log("Token fetch failed", e); } }
-      
+
       let target = `https://www.opensymbols.org/api/v1/symbols/search?q=${encodeURIComponent(searchQuery)}`;
       if (token) target += `&access_token=${token}`;
-      
+
       const res = await fetch(getProxyUrl(target));
-      
+
       if (!res.ok) throw new Error(`API Error`);
       const data = await res.json();
       if (Array.isArray(data)) setSearchResults(data);
@@ -564,29 +678,29 @@ export default function App() {
               <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">{activePage.icon} {activePage.label}</h1>
               {isEditMode && <button onClick={() => setEditingPage(activePage)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500"><Edit2 size={16} /></button>}
             </div>
-            
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                
-                {/* Location Selector (NEW) */}
-                <div className="flex items-center bg-white/60 rounded-full px-3 py-1.5 border border-white shrink-0">
-                    <MapPin size={14} className="text-red-500 mr-2" />
-                    <select
-                        value={locationContext}
-                        onChange={(e) => setLocationContext(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-slate-700 outline-none appearance-none cursor-pointer"
-                    >
-                        {LOCATIONS.map(loc => <option key={loc.id} value={loc.label}>{loc.icon} {loc.label}</option>)}
-                    </select>
-                </div>
 
-                {/* Time Context Indicator (Conditional) */}
-                {timeContext && (
-                    <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white shrink-0">
-                        {timeContext === 'morning' && <><Sun size={14} className="text-orange-500"/> Morning</>}
-                        {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600"/> Afternoon</>}
-                        {timeContext === 'evening' && <><Sunset size={14} className="text-indigo-500"/> Evening</>}
-                    </div>
-                )}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+
+              {/* Location Selector (NEW) */}
+              <div className="flex items-center bg-white/60 rounded-full px-3 py-1.5 border border-white shrink-0">
+                <MapPin size={14} className="text-red-500 mr-2" />
+                <select
+                  value={locationContext}
+                  onChange={(e) => setLocationContext(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-700 outline-none appearance-none cursor-pointer"
+                >
+                  {LOCATIONS.map(loc => <option key={loc.id} value={loc.label}>{loc.icon} {loc.label}</option>)}
+                </select>
+              </div>
+
+              {/* Time Context Indicator (Conditional) */}
+              {timeContext && (
+                <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white shrink-0">
+                  {timeContext === 'morning' && <><Sun size={14} className="text-orange-500" /> Morning</>}
+                  {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600" /> Afternoon</>}
+                  {timeContext === 'evening' && <><Sunset size={14} className="text-indigo-500" /> Evening</>}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -603,9 +717,9 @@ export default function App() {
           )}
         </div>
       </main>
-      
+
       {/* ... (Existing Modals: Edit Tile, Search, PIN, etc. remain unchanged) ... */}
-      
+
       {/* Edit Tile Modal */}
       {editingTile && !showImageSearch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -967,5 +1081,3 @@ export default function App() {
     </div>
   );
 }
-
-
