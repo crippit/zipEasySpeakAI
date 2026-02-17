@@ -379,37 +379,49 @@ export default function App() {
   // --- Drag and Drop Handlers ---
   const handleDragStart = (e, item, type) => {
     if (!isEditMode) return;
-    e.dataTransfer.setData('text/plain', item.id); // Essential for some browsers
+    // CRITICAL FIX: setData allows drag to proceed on Firefox/standard compliance
+    e.dataTransfer.setData('text/plain', item.id);
     e.dataTransfer.effectAllowed = 'move';
+
+    // Using timeout to avoid dragging element disappearing immediately (optional visual tweak)
+    // setTimeout(() => {
     if (type === 'tile') {
       setDraggedTile(item);
     } else if (type === 'page') {
       setDraggedPage(item);
     }
+    // }, 0);
   };
 
   const handleDragOver = (e) => {
     if (!isEditMode) return;
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault(); // Essential for allowing drop
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleTileDrop = (e, targetTile) => {
-    if (!isEditMode || !draggedTile || draggedTile.id === targetTile.id) return;
+    if (!isEditMode) return;
     e.preventDefault();
     e.stopPropagation();
+
+    // Retrieve the ID we stored in handleDragStart
+    const draggedId = e.dataTransfer.getData('text/plain') || (draggedTile && draggedTile.id);
+
+    // Guard clauses
+    if (!draggedId || draggedId === targetTile.id) return;
 
     setConfig(prev => {
       const newPages = prev.pages.map(page => {
         if (page.id === activePageId) {
           const tiles = [...page.tiles];
-          const draggedIndex = tiles.findIndex(t => t.id === draggedTile.id);
+          const draggedIndex = tiles.findIndex(t => t.id === draggedId);
           const targetIndex = tiles.findIndex(t => t.id === targetTile.id);
 
           if (draggedIndex !== -1 && targetIndex !== -1) {
-            // Remove from old position
+            // Reordering Logic:
+            // Remove the item from its old position
             const [movedItem] = tiles.splice(draggedIndex, 1);
-            // Insert at new position
+            // Insert it at the new position
             tiles.splice(targetIndex, 0, movedItem);
             return { ...page, tiles };
           }
@@ -422,13 +434,17 @@ export default function App() {
   };
 
   const handlePageDrop = (e, targetPage) => {
-    if (!isEditMode || !draggedPage || draggedPage.id === targetPage.id) return;
+    if (!isEditMode) return;
     e.preventDefault();
     e.stopPropagation();
 
+    const draggedId = e.dataTransfer.getData('text/plain') || (draggedPage && draggedPage.id);
+
+    if (!draggedId || draggedId === targetPage.id) return;
+
     setConfig(prev => {
       const pages = [...prev.pages];
-      const draggedIndex = pages.findIndex(p => p.id === draggedPage.id);
+      const draggedIndex = pages.findIndex(p => p.id === draggedId);
       const targetIndex = pages.findIndex(p => p.id === targetPage.id);
 
       if (draggedIndex !== -1 && targetIndex !== -1) {
