@@ -38,7 +38,8 @@ import {
   Sunset,
   MapPin,
   BrainCircuit,
-  GripVertical
+  GripVertical,
+  RefreshCw
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
@@ -506,6 +507,17 @@ export default function App() {
         });
         return { ...prev, settings: { ...prev.settings, keyboardLayout: newLayout }, pages: newPages };
     });
+  };
+
+  const forceAppReload = () => {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister();
+            }
+        });
+    }
+    window.location.reload(true);
   };
 
   // CRUD Helpers
@@ -1071,7 +1083,7 @@ export default function App() {
                   </select>
                 </div>
                 
-                {/* NEW Keyboard Layout Selection */}
+                {/* Keyboard Layout Selection */}
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
                   <label className="block text-sm font-medium mb-1">Keyboard Layout</label>
                   <select 
@@ -1108,24 +1120,22 @@ export default function App() {
                   </div>
                   <input type="checkbox" checked={config.settings.enableSentenceBuilder} onChange={e => updateSetting('enableSentenceBuilder', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                 </div>
-                {config.settings.enableSentenceBuilder && (
-                  <>
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                      <div>
-                        <div className="font-bold text-sm">Speak on Select</div>
-                        <p className="text-xs text-slate-500">Speak each word as it is added</p>
-                      </div>
-                      <input type="checkbox" checked={config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                      <div>
-                        <div className="font-bold text-sm">Speak Typed Words</div>
-                        <p className="text-xs text-slate-500">Speak typed words when pressing Space</p>
-                      </div>
-                      <input type="checkbox" checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
-                    </div>
-                  </>
-                )}
+                
+                {/* These are now unconditionally visible, not hidden inside the sentence builder block */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <div>
+                    <div className="font-bold text-sm">Speak on Select</div>
+                    <p className="text-xs text-slate-500">Speak each word as it is added</p>
+                  </div>
+                  <input type="checkbox" checked={config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <div>
+                    <div className="font-bold text-sm">Speak Typed Words</div>
+                    <p className="text-xs text-slate-500">Speak typed words when pressing Space</p>
+                  </div>
+                  <input type="checkbox" checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                </div>
               </div>
             </section>
 
@@ -1232,6 +1242,13 @@ export default function App() {
                 </label>
               </div>
             </section>
+
+            <hr className="border-slate-100" />
+            
+            {/* FORCE APP REFRESH BUTTON */}
+            <button onClick={forceAppReload} className="w-full flex items-center justify-center gap-2 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors">
+                <RefreshCw size={18} /> Clear App Cache
+            </button>
 
           </div>
           <div className="p-4 bg-slate-50 border-t text-center text-xs text-slate-400">Zip EasySpeak v1.1 by <span className="font-bold">Zip Solutions</span></div>
