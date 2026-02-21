@@ -671,7 +671,7 @@ export default function App() {
   };
 
   // --- Components ---
-  const Tile = ({ tile, onClick, editMode }) => {
+  const Tile = ({ tile, onClick, editMode, isKeyboardKey }) => {
     const isPredicted = !editMode && getIsPredicted(tile.phrase);
     return (
       <div
@@ -680,7 +680,8 @@ export default function App() {
         onDragOver={handleDragOver}
         onDrop={(e) => handleTileDrop(e, tile)}
         onClick={() => !editMode && onClick(tile)}
-        className={`relative group flex flex-col items-center justify-center aspect-square rounded-2xl shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
+        className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
+        ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
         ${isPredicted ? 'ring-4 ring-yellow-400 ring-offset-2 z-10 scale-105' : ''}
         ${editMode ? 'cursor-grab active:cursor-grabbing' : ''}
         `}
@@ -689,11 +690,11 @@ export default function App() {
           {tile.type === 'image' ? (
             <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
           ) : (
-            <span className="text-5xl md:text-6xl select-none">{tile.image}</span>
+            <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl' : 'text-5xl md:text-6xl'} select-none`}>{tile.image}</span>
           )}
         </div>
         {showLabels && (
-          <div className="w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 text-sm md:text-base truncate flex items-center justify-center gap-1 pointer-events-none">
+          <div className={`w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 ${isKeyboardKey ? 'hidden sm:flex text-sm md:text-base' : 'flex text-sm md:text-base'} truncate items-center justify-center gap-1 pointer-events-none`}>
             {tile.label}
             {tile.linkToPage && <ArrowRightCircle size={12} className="text-blue-600 opacity-70" />}
             {tile.isSilent && editMode && <VolumeX size={12} className="text-red-500 opacity-70" />}
@@ -831,6 +832,14 @@ export default function App() {
         {/* Dynamic Grid / Row Layout Render */}
         {isCustomRowLayout ? (
           <div className="flex flex-col gap-2 md:gap-4 pb-20 items-center w-full">
+            
+            {/* ROTATE PROMPT FOR MOBILE PHONES IN PORTRAIT */}
+            <div className="w-full text-center mb-1 sm:hidden landscape:hidden">
+              <span className="text-[10px] text-slate-500 font-semibold bg-white/60 rounded-full px-3 py-1 flex items-center justify-center gap-1 inline-flex w-auto border border-white shadow-sm">
+                <RefreshCw size={12} className="text-blue-500" /> Rotate device for easier typing
+              </span>
+            </div>
+
             {/* Group tiles by row property */}
             {(() => {
               const rows = [];
@@ -841,12 +850,17 @@ export default function App() {
               });
               
               return Object.values(rows).map((rowTiles, rIdx) => (
-                <div key={rIdx} className="flex gap-2 md:gap-3 justify-center w-full max-w-5xl">
-                   {rowTiles.map(tile => (
-                     <div key={tile.id} className="flex-1 max-w-[60px] sm:max-w-[80px] md:max-w-[100px]">
-                       <Tile tile={tile} onClick={handleTileClick} editMode={isEditMode} />
-                     </div>
-                   ))}
+                // Changed from px-0 to px-0.5 sm:px-0 and reduced gap for mobile to cram keys in tightly
+                <div key={rIdx} className="flex gap-1 sm:gap-2 md:gap-3 justify-center w-full max-w-5xl px-0.5 sm:px-0">
+                   {rowTiles.map(tile => {
+                     // The Spacebar gets a larger flex-grow share
+                     const isSpace = tile.id === 't_space';
+                     return (
+                       <div key={tile.id} className={`${isSpace ? 'flex-[2_2_0%]' : 'flex-[1_1_0%]'} sm:max-w-[80px] md:max-w-[100px]`}>
+                         <Tile tile={tile} onClick={handleTileClick} editMode={isEditMode} isKeyboardKey={true} />
+                       </div>
+                     );
+                   })}
                 </div>
               ));
             })()}
