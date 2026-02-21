@@ -192,11 +192,11 @@ export default function App() {
         const parsed = JSON.parse(saved);
         
         // Safety upgrade injection for users who had the old config format
-        let upgradedPages = [...parsed.pages];
+        let upgradedPages = Array.isArray(parsed.pages) ? [...parsed.pages] : [...DEFAULT_CONFIG.pages];
         
         // Update old qwerty links to new dynamic keyboard
         upgradedPages.forEach(p => {
-            p.tiles.forEach(t => {
+            (p.tiles || []).forEach(t => {
                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
             });
         });
@@ -215,7 +215,7 @@ export default function App() {
         return {
           ...DEFAULT_CONFIG,
           ...parsed,
-          settings: { ...DEFAULT_CONFIG.settings, ...parsed.settings },
+          settings: { ...DEFAULT_CONFIG.settings, ...(parsed.settings || {}) },
           pages: upgradedPages
         };
       }
@@ -508,14 +508,14 @@ export default function App() {
   // CRUD Helpers
   const addTile = () => {
     const newTile = { id: generateId(), label: "New", phrase: "New", image: "⬜", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false };
-    setConfig(p => ({ ...p, pages: p.pages.map(pg => pg.id === activePageId ? { ...pg, tiles: [...pg.tiles, newTile] } : pg) }));
+    setConfig(p => ({ ...p, pages: p.pages.map(pg => pg.id === activePageId ? { ...pg, tiles: [...(pg.tiles || []), newTile] } : pg) }));
   };
   const updateTile = (t) => {
-    setConfig(p => ({ ...p, pages: p.pages.map(pg => pg.id === activePageId ? { ...pg, tiles: pg.tiles.map(ti => ti.id === t.id ? t : ti) } : pg) }));
+    setConfig(p => ({ ...p, pages: p.pages.map(pg => pg.id === activePageId ? { ...pg, tiles: (pg.tiles || []).map(ti => ti.id === t.id ? t : ti) } : pg) }));
     setEditingTile(null);
   };
   const deleteTile = (tid) => {
-    setConfig(p => ({ ...p, pages: p.pages.map(pg => pg.id === activePageId ? { ...pg, tiles: pg.tiles.filter(ti => ti.id !== tid) } : pg) }));
+    setConfig(p => ({ ...p, pages: p.pages.map(pg => pg.id === activePageId ? { ...pg, tiles: (pg.tiles || []).filter(ti => ti.id !== tid) } : pg) }));
     setEditingTile(null);
   };
   const addPage = () => {
@@ -544,8 +544,8 @@ export default function App() {
   const displayedVoices = config.settings.offlineOnly ? availableVoices.filter(v => v.localService) : availableVoices;
   const showLabels = config.settings.showLabels !== false;
   
-  // Layout Detectors
-  const isCustomRowLayout = (activePage.id === 'p_keyboard' || activePage.id === 'p_numbers') && activePage.tiles.some(t => t.row !== undefined);
+  // Layout Detectors - Safely check tiles
+  const isCustomRowLayout = (activePage?.id === 'p_keyboard' || activePage?.id === 'p_numbers') && (activePage?.tiles || []).some(t => t.row !== undefined);
 
   const getGridClass = () => {
     const s = config.settings.gridSize;
@@ -735,7 +735,7 @@ export default function App() {
         </div>
       </nav>
 
-      <main className={`flex-1 h-[calc(100vh-80px)] md:h-screen overflow-y-auto p-4 md:p-8 transition-colors ${activePage.color}`}>
+      <main className={`flex-1 h-[calc(100vh-80px)] md:h-screen overflow-y-auto p-4 md:p-8 transition-colors ${activePage?.color || 'bg-slate-100'}`}>
 
         {/* --- Top Bar: Header or Sentence Strip --- */}
         <div className="mb-6 space-y-4">
@@ -771,7 +771,7 @@ export default function App() {
           <div className="flex items-center justify-between gap-2 overflow-hidden">
             <div className="flex items-center gap-3 shrink-0">
               <img src="/pwa-192x192.png" alt="Logo" className="md:hidden w-8 h-8 rounded-lg shadow-sm object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
-              <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">{activePage.icon} {activePage.label}</h1>
+              <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">{activePage?.icon || ''} {activePage?.label || 'Page'}</h1>
               {isEditMode && <button onClick={() => setEditingPage(activePage)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500"><Edit2 size={16} /></button>}
             </div>
             
@@ -807,13 +807,13 @@ export default function App() {
             {/* Group tiles by row property */}
             {(() => {
               const rows = [];
-              activePage.tiles.forEach(t => {
+              (activePage?.tiles || []).forEach(t => {
                 const r = t.row || 0;
                 if (!rows[r]) rows[r] = [];
                 rows[r].push(t);
               });
               
-              return rows.map((rowTiles, rIdx) => (
+              return Object.values(rows).map((rowTiles, rIdx) => (
                 <div key={rIdx} className="flex gap-2 md:gap-3 justify-center w-full max-w-5xl">
                    {rowTiles.map(tile => (
                      <div key={tile.id} className="flex-1 max-w-[60px] sm:max-w-[80px] md:max-w-[100px]">
@@ -831,7 +831,7 @@ export default function App() {
           </div>
         ) : (
           <div className={`grid ${getGridClass()} gap-4 md:gap-6 pb-20`}>
-            {activePage?.tiles?.map(tile => (
+            {(activePage?.tiles || []).map(tile => (
               <Tile key={tile.id} tile={tile} onClick={handleTileClick} editMode={isEditMode} />
             ))}
             {isEditMode && (
