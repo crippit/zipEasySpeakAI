@@ -132,6 +132,7 @@ const DEFAULT_CONFIG = {
     enableSentenceBuilder: true,
     enableTimeContext: true,
     speakOnSelect: false,
+    speakOnSpace: true, // NEW Setting
     showLabels: true,
     keyboardLayout: "qwerty", // NEW Setting
   },
@@ -342,7 +343,9 @@ export default function App() {
                 const last = newArr[newArr.length - 1];
                 if (last && last.isTyped) {
                     // Speak the completed word! (Includes logic for numbers like "10" -> "ten")
-                    speak(last.phrase);
+                    if (config.settings.speakOnSpace !== false) {
+                        speak(last.phrase);
+                    }
                     last.isTyped = false; // Mark as "done" so next letter starts new word
                 }
                 return newArr;
@@ -1106,13 +1109,22 @@ export default function App() {
                   <input type="checkbox" checked={config.settings.enableSentenceBuilder} onChange={e => updateSetting('enableSentenceBuilder', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                 </div>
                 {config.settings.enableSentenceBuilder && (
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                    <div>
-                      <div className="font-bold text-sm">Speak on Select</div>
-                      <p className="text-xs text-slate-500">Speak each word as it is added</p>
+                  <>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                      <div>
+                        <div className="font-bold text-sm">Speak on Select</div>
+                        <p className="text-xs text-slate-500">Speak each word as it is added</p>
+                      </div>
+                      <input type="checkbox" checked={config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                     </div>
-                    <input type="checkbox" checked={config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
-                  </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                      <div>
+                        <div className="font-bold text-sm">Speak Typed Words</div>
+                        <p className="text-xs text-slate-500">Speak typed words when pressing Space</p>
+                      </div>
+                      <input type="checkbox" checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                    </div>
+                  </>
                 )}
               </div>
             </section>
