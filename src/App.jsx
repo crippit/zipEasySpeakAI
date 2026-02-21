@@ -677,41 +677,44 @@ export default function App() {
     const isPredicted = !editMode && getIsPredicted(tile.phrase);
     const hasVariants = tile.variants && tile.variants.length > 0;
     
-    // Long Press Logic for Morphology
+    // Robust Mobile Long Press Logic
     const pressTimer = useRef(null);
     const isLongPress = useRef(false);
 
     const handlePointerDown = (e) => {
       if (editMode) return;
+      
+      // Ignore secondary mouse clicks
+      if (e.button && e.button !== 0) return;
+
       isLongPress.current = false;
-      pressTimer.current = setTimeout(() => {
-        if (hasVariants) {
+      if (hasVariants) {
+        pressTimer.current = setTimeout(() => {
           isLongPress.current = true;
           setActiveMorphology(tile);
-          // Optional: give haptic feedback if available on device
           if (navigator.vibrate) navigator.vibrate(50);
-        }
-      }, 500); // 500ms to trigger variants menu
+        }, 500); 
+      }
     };
 
-    const handlePointerUpOrLeave = () => {
-      if (pressTimer.current) clearTimeout(pressTimer.current);
+    const handlePointerUpOrCancel = () => {
+      if (pressTimer.current) {
+        clearTimeout(pressTimer.current);
+      }
     };
 
     const handleClick = (e) => {
-      if (editMode) {
-          // In edit mode, allow normal drag/drop and button clicks
-          return;
-      }
+      if (editMode) return;
       
-      // If we just triggered a long press, block the standard click
+      // If the timer completed and marked this as a long press, block the click!
       if (isLongPress.current) {
           e.preventDefault();
           e.stopPropagation();
+          isLongPress.current = false; // Reset for next time
           return;
       }
       
-      // Standard short-click behavior
+      // Otherwise, process as a normal quick tap
       onClick(tile);
     };
 
@@ -721,10 +724,24 @@ export default function App() {
         onDragStart={(e) => handleDragStart(e, tile, 'tile')}
         onDragOver={handleDragOver}
         onDrop={(e) => handleTileDrop(e, tile)}
+        
+        // Touch / Pointer Event Listeners
         onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUpOrLeave}
-        onPointerLeave={handlePointerUpOrLeave}
+        onPointerUp={handlePointerUpOrCancel}
+        onPointerLeave={handlePointerUpOrCancel}
+        onPointerCancel={handlePointerUpOrCancel}
         onClick={handleClick}
+        
+        // CRITICAL FIX: Prevent the browser's right-click/select menu from ruining the long-press
+        onContextMenu={(e) => {
+          if (!editMode && hasVariants) {
+            e.preventDefault(); 
+          }
+        }}
+        
+        // Inline style safeguard to block iOS callout menus
+        style={{ WebkitTouchCallout: 'none' }}
+
         className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
         ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
         ${isPredicted ? 'ring-4 ring-yellow-400 ring-offset-2 z-10 scale-105' : ''}
