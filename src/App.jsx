@@ -134,7 +134,7 @@ const DEFAULT_CONFIG = {
     enableTimeContext: true,
     speakOnSelect: false,
     speakOnSpace: true,
-    clearOnSpeak: false, // NEW Setting
+    clearOnSpeak: false, // Ensure this defaults to a safe boolean
     showLabels: true,
     keyboardLayout: "qwerty",
   },
@@ -1133,29 +1133,34 @@ export default function App() {
                   <input type="checkbox" checked={config.settings.enableSentenceBuilder} onChange={e => updateSetting('enableSentenceBuilder', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                 </div>
                 
-                {/* These are now unconditionally visible, not hidden inside the sentence builder block */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                  <div>
-                    <div className="font-bold text-sm">Speak on Select</div>
-                    <p className="text-xs text-slate-500">Speak each word as it is added</p>
-                  </div>
-                  <input type="checkbox" checked={config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                  <div>
-                    <div className="font-bold text-sm">Speak Typed Words</div>
-                    <p className="text-xs text-slate-500">Speak typed words when pressing Space</p>
-                  </div>
-                  <input type="checkbox" checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
-                </div>
-                
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                  <div>
-                    <div className="font-bold text-sm">Clear After Speaking</div>
-                    <p className="text-xs text-slate-500">Empty the strip when pressing play</p>
-                  </div>
-                  <input type="checkbox" checked={config.settings.clearOnSpeak === true} onChange={e => updateSetting('clearOnSpeak', e.target.checked)} className="w-5 h-5 accent-blue-600" />
-                </div>
+                {/* Nested options that only apply when Sentence Builder is ON */}
+                {config.settings.enableSentenceBuilder && (
+                  <>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 pl-4">
+                      <div>
+                        <div className="font-bold text-sm text-blue-700">Clear After Speaking</div>
+                        <p className="text-xs text-slate-500">Empty the strip when playing</p>
+                      </div>
+                      <input type="checkbox" checked={!!config.settings.clearOnSpeak} onChange={e => updateSetting('clearOnSpeak', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 pl-4">
+                      <div>
+                        <div className="font-bold text-sm">Speak on Select</div>
+                        <p className="text-xs text-slate-500">Speak each word as it is added</p>
+                      </div>
+                      <input type="checkbox" checked={!!config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 pl-4">
+                      <div>
+                        <div className="font-bold text-sm">Speak Typed Words</div>
+                        <p className="text-xs text-slate-500">Speak typed words on Space</p>
+                      </div>
+                      <input type="checkbox" checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 
