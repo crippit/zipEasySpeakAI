@@ -48,6 +48,59 @@ import { NEXT_WORD_PREDICTIONS } from './services/ai';
  * Developed by Zip Solutions
  */
 
+// --- Keyboard Generators ---
+const getKeyboardTiles = (type) => {
+  const layouts = {
+    qwerty: ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'],
+    abc: ['ABCDEFG', 'HIJKLMN', 'OPQRSTU', 'VWXYZ']
+  };
+  const rows = layouts[type] || layouts.qwerty;
+  let tiles = [];
+  
+  rows.forEach((rowStr, rIndex) => {
+    rowStr.split('').forEach(char => {
+      tiles.push({ id: `k_${char}`, label: char, phrase: char, image: char, type: 'emoji', color: 'bg-white', row: rIndex });
+    });
+  });
+  
+  // Bottom Controls Row
+  const bottomRow = rows.length;
+  tiles.push({ id: 't_numbers', label: '123', phrase: '', image: '123', type: 'emoji', color: 'bg-slate-200', linkToPage: 'p_numbers', isSilent: true, row: bottomRow });
+  tiles.push({ id: 't_space', label: 'Space', phrase: ' ', image: '␣', type: 'emoji', color: 'bg-yellow-200', row: bottomRow });
+  tiles.push({ id: 't_period', label: '.', phrase: '.', image: '.', type: 'emoji', color: 'bg-yellow-200', row: bottomRow });
+  tiles.push({ id: 't_question', label: '?', phrase: '?', image: '?', type: 'emoji', color: 'bg-yellow-200', row: bottomRow });
+  tiles.push({ id: 't_backspace', label: 'Delete', phrase: 'Delete', image: '⌫', type: 'emoji', color: 'bg-red-200', row: bottomRow });
+  tiles.push({ id: 't_back_home', label: 'Home', phrase: '', image: '🏠', type: 'emoji', color: 'bg-blue-100', linkToPage: 'p_core', isSilent: true, row: bottomRow });
+  
+  return tiles;
+};
+
+const getNumbersTiles = () => {
+  const rows = [
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9']
+  ];
+  let tiles = [];
+  
+  rows.forEach((row, rIndex) => {
+    row.forEach(char => {
+      tiles.push({ id: `n_${char}`, label: char, phrase: char, image: char, type: 'emoji', color: 'bg-white', row: rIndex });
+    });
+  });
+  
+  // Controls Row
+  tiles.push({ id: 't_abc', label: 'ABC', phrase: '', image: 'ABC', type: 'emoji', color: 'bg-slate-200', linkToPage: 'p_keyboard', isSilent: true, row: 3 });
+  tiles.push({ id: 'n_0', label: '0', phrase: '0', image: '0', type: 'emoji', color: 'bg-white', row: 3 });
+  tiles.push({ id: 't_backspace', label: 'Delete', phrase: 'Delete', image: '⌫', type: 'emoji', color: 'bg-red-200', row: 3 });
+  
+  // Final Action Row
+  tiles.push({ id: 't_space', label: 'Space', phrase: ' ', image: '␣', type: 'emoji', color: 'bg-yellow-200', row: 4 });
+  tiles.push({ id: 't_back_home', label: 'Home', phrase: '', image: '🏠', type: 'emoji', color: 'bg-blue-100', linkToPage: 'p_core', isSilent: true, row: 4 });
+  
+  return tiles;
+};
+
 // --- Constants ---
 const LOCATIONS = [
   { id: 'home', label: 'Home', icon: '🏠' },
@@ -66,7 +119,7 @@ const LOCATIONS = [
 
 // --- Default Configuration Data ---
 const DEFAULT_CONFIG = {
-  version: 1,
+  version: 2, // Bumped version for update detection
   settings: {
     voiceURI: null,
     rate: 1.0,
@@ -80,6 +133,7 @@ const DEFAULT_CONFIG = {
     enableTimeContext: true,
     speakOnSelect: false,
     showLabels: true,
+    keyboardLayout: "qwerty", // NEW Setting
   },
   pages: [
     {
@@ -94,46 +148,7 @@ const DEFAULT_CONFIG = {
         { id: "t4", label: "More", phrase: "more", image: "➕", type: "emoji", color: "bg-blue-200", linkToPage: "", isSilent: false },
         { id: "t5", label: "Yes", phrase: "Yes", image: "👍", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
         { id: "t6", label: "No", phrase: "No", image: "👎", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
-        { id: "t_kb_link", label: "Type", phrase: "", image: "⌨️", type: "emoji", color: "bg-slate-200", linkToPage: "p_qwerty_full", isSilent: true },
-      ]
-    },
-    {
-      id: "p_qwerty_full",
-      label: "Keyboard",
-      icon: "⌨️",
-      color: "bg-slate-100",
-      tiles: [
-        { "id": "t_q", "label": "Q", "phrase": "Q", "image": "Q", "type": "emoji", "color": "bg-white" },
-        { "id": "t_w", "label": "W", "phrase": "W", "image": "W", "type": "emoji", "color": "bg-white" },
-        { "id": "t_e", "label": "E", "phrase": "E", "image": "E", "type": "emoji", "color": "bg-white" },
-        { "id": "t_r", "label": "R", "phrase": "R", "image": "R", "type": "emoji", "color": "bg-white" },
-        { "id": "t_t", "label": "T", "phrase": "T", "image": "T", "type": "emoji", "color": "bg-white" },
-        { "id": "t_y", "label": "Y", "phrase": "Y", "image": "Y", "type": "emoji", "color": "bg-white" },
-        { "id": "t_u", "label": "U", "phrase": "U", "image": "U", "type": "emoji", "color": "bg-white" },
-        { "id": "t_i", "label": "I", "phrase": "I", "image": "I", "type": "emoji", "color": "bg-white" },
-        { "id": "t_o", "label": "O", "phrase": "O", "image": "O", "type": "emoji", "color": "bg-white" },
-        { "id": "t_p", "label": "P", "phrase": "P", "image": "P", "type": "emoji", "color": "bg-white" },
-        { "id": "t_a", "label": "A", "phrase": "A", "image": "A", "type": "emoji", "color": "bg-white" },
-        { "id": "t_s", "label": "S", "phrase": "S", "image": "S", "type": "emoji", "color": "bg-white" },
-        { "id": "t_d", "label": "D", "phrase": "D", "image": "D", "type": "emoji", "color": "bg-white" },
-        { "id": "t_f", "label": "F", "phrase": "F", "image": "F", "type": "emoji", "color": "bg-white" },
-        { "id": "t_g", "label": "G", "phrase": "G", "image": "G", "type": "emoji", "color": "bg-white" },
-        { "id": "t_h", "label": "H", "phrase": "H", "image": "H", "type": "emoji", "color": "bg-white" },
-        { "id": "t_j", "label": "J", "phrase": "J", "image": "J", "type": "emoji", "color": "bg-white" },
-        { "id": "t_k", "label": "K", "phrase": "K", "image": "K", "type": "emoji", "color": "bg-white" },
-        { "id": "t_l", "label": "L", "phrase": "L", "image": "L", "type": "emoji", "color": "bg-white" },
-        { "id": "t_z", "label": "Z", "phrase": "Z", "image": "Z", "type": "emoji", "color": "bg-white" },
-        { "id": "t_x", "label": "X", "phrase": "X", "image": "X", "type": "emoji", "color": "bg-white" },
-        { "id": "t_c", "label": "C", "phrase": "C", "image": "C", "type": "emoji", "color": "bg-white" },
-        { "id": "t_v", "label": "V", "phrase": "V", "image": "V", "type": "emoji", "color": "bg-white" },
-        { "id": "t_b", "label": "B", "phrase": "B", "image": "B", "type": "emoji", "color": "bg-white" },
-        { "id": "t_n", "label": "N", "phrase": "N", "image": "N", "type": "emoji", "color": "bg-white" },
-        { "id": "t_m", "label": "M", "phrase": "M", "image": "M", "type": "emoji", "color": "bg-white" },
-        { "id": "t_space", "label": "Space", "phrase": " ", "image": "␣", "type": "emoji", "color": "bg-yellow-200" },
-        { "id": "t_period", "label": ".", "phrase": ".", "image": ".", "type": "emoji", "color": "bg-yellow-200" },
-        { "id": "t_question", "label": "?", "phrase": "?", "image": "?", "type": "emoji", "color": "bg-yellow-200" },
-        { "id": "t_backspace", "label": "Delete", "phrase": "Delete", "image": "⌫", "type": "emoji", "color": "bg-red-200" },
-        { "id": "t_back_home", "label": "Home", "phrase": "", "image": "🏠", "type": "emoji", "color": "bg-blue-100", "linkToPage": "p_core", "isSilent": true }
+        { id: "t_kb_link", label: "Type", phrase: "", image: "⌨️", type: "emoji", color: "bg-slate-200", linkToPage: "p_keyboard", isSilent: true },
       ]
     },
     {
@@ -147,12 +162,25 @@ const DEFAULT_CONFIG = {
         { id: "f3", label: "Water", phrase: "water", image: "💧", type: "emoji", color: "bg-blue-100", linkToPage: "", isSilent: false },
         { id: "f4", label: "Cookie", phrase: "cookie", image: "🍪", type: "emoji", color: "bg-amber-200", linkToPage: "", isSilent: false },
       ]
+    },
+    {
+      id: "p_keyboard",
+      label: "Keyboard",
+      icon: "⌨️",
+      color: "bg-slate-100",
+      tiles: getKeyboardTiles("qwerty")
+    },
+    {
+      id: "p_numbers",
+      label: "Numbers",
+      icon: "1️⃣",
+      color: "bg-slate-100",
+      tiles: getNumbersTiles()
     }
   ]
 };
 
 const STORAGE_KEY = 'zip_easyspeak_config';
-
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export default function App() {
@@ -162,10 +190,33 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        
+        // Safety upgrade injection for users who had the old config format
+        let upgradedPages = [...parsed.pages];
+        
+        // Update old qwerty links to new dynamic keyboard
+        upgradedPages.forEach(p => {
+            p.tiles.forEach(t => {
+                if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
+            });
+        });
+        
+        // Ensure Keyboard and Number pages exist
+        if (!upgradedPages.some(p => p.id === 'p_keyboard')) {
+             upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_keyboard'));
+        }
+        if (!upgradedPages.some(p => p.id === 'p_numbers')) {
+             upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_numbers'));
+        }
+
+        // Clean out the old hardcoded qwerty if it still exists to prevent clutter
+        upgradedPages = upgradedPages.filter(p => p.id !== 'p_qwerty_full');
+
         return {
           ...DEFAULT_CONFIG,
           ...parsed,
-          settings: { ...DEFAULT_CONFIG.settings, ...parsed.settings }
+          settings: { ...DEFAULT_CONFIG.settings, ...parsed.settings },
+          pages: upgradedPages
         };
       }
     } catch (e) {
@@ -175,9 +226,9 @@ export default function App() {
   });
 
   const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
-
+  
   // Context States
-  const [timeContext, setTimeContext] = useState('');
+  const [timeContext, setTimeContext] = useState(''); 
   const [locationContext, setLocationContext] = useState('Home');
 
   // Drag and Drop States
@@ -192,27 +243,25 @@ export default function App() {
   // Time of Day Detection
   useEffect(() => {
     const updateTimeContext = () => {
-      // If disabled in settings, clear context
-      if (!config.settings.enableTimeContext) {
-        setTimeContext('');
-        return;
-      }
-
-      const h = new Date().getHours();
-      if (h >= 5 && h < 12) setTimeContext('morning');
-      else if (h >= 12 && h < 18) setTimeContext('afternoon');
-      else setTimeContext('evening');
+        if (!config.settings.enableTimeContext) {
+            setTimeContext('');
+            return;
+        }
+        const h = new Date().getHours();
+        if (h >= 5 && h < 12) setTimeContext('morning');
+        else if (h >= 12 && h < 18) setTimeContext('afternoon');
+        else setTimeContext('evening');
     };
-
+    
     updateTimeContext();
     const interval = setInterval(updateTimeContext, 60000 * 5); // Check every 5 mins
     return () => clearInterval(interval);
-  }, [config.settings.enableTimeContext]); // Re-run when setting changes
+  }, [config.settings.enableTimeContext]); 
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
-  const [sentence, setSentence] = useState([]);
-  const [accessToken, setAccessToken] = useState(null);
+  const [sentence, setSentence] = useState([]); 
+  const [accessToken, setAccessToken] = useState(null); 
 
   // --- UI State ---
   const [showSettings, setShowSettings] = useState(false);
@@ -260,79 +309,79 @@ export default function App() {
 
   const handleTileClick = (tile) => {
     const isSilent = tile.isSilent === true;
-    const isKeyboardPage = activePage.id.includes('qwerty') || activePage.label.toLowerCase().includes('keyboard');
+    const isTypingPage = activePageId === 'p_keyboard' || activePageId === 'p_numbers';
 
-    // --- KEYBOARD LOGIC ---
-    if (isKeyboardPage) {
-      // 1. Handle Backspace (Character by Character deletion)
-      if (tile.id === 't_backspace') {
-        setSentence(prev => {
-          if (prev.length === 0) return prev;
-          const newArr = [...prev];
-          const lastIndex = newArr.length - 1;
-          const last = newArr[lastIndex];
+    // --- KEYBOARD & NUMBERS LOGIC ---
+    if (isTypingPage) {
+        // 1. Handle Backspace (Character by Character deletion)
+        if (tile.id === 't_backspace') {
+            setSentence(prev => {
+                if (prev.length === 0) return prev;
+                const newArr = [...prev];
+                const lastIndex = newArr.length - 1;
+                const last = newArr[lastIndex];
+                
+                // If deleting from a typed word, remove last char
+                if (last.isTyped && last.phrase.length > 0) {
+                    const newText = last.phrase.slice(0, -1);
+                    if (newText.length === 0) return newArr.slice(0, -1); // Remove entirely if empty
+                    newArr[lastIndex] = { ...last, label: newText, phrase: newText };
+                    return newArr;
+                }
+                // Otherwise delete whole tile (standard behavior)
+                return newArr.slice(0, -1);
+            });
+            return;
+        }
+        
+        // 2. Handle Space (Commits the word)
+        if (tile.id === 't_space') {
+            setSentence(prev => {
+                if (prev.length === 0) return prev;
+                const newArr = [...prev];
+                const last = newArr[newArr.length - 1];
+                if (last && last.isTyped) {
+                    // Speak the completed word! (Includes logic for numbers like "10" -> "ten")
+                    speak(last.phrase);
+                    last.isTyped = false; // Mark as "done" so next letter starts new word
+                }
+                return newArr;
+            });
+            return;
+        }
 
-          // If deleting from a typed word, remove last char
-          if (last.isTyped && last.phrase.length > 0) {
-            const newText = last.phrase.slice(0, -1);
-            if (newText.length === 0) return newArr.slice(0, -1); // Remove entirely if empty
-            newArr[lastIndex] = { ...last, label: newText, phrase: newText };
-            return newArr;
-          }
-          // Otherwise delete whole tile (standard behavior)
-          return newArr.slice(0, -1);
-        });
-        return;
-      }
-
-      // 2. Handle Space (Commits the word)
-      if (tile.id === 't_space') {
-        setSentence(prev => {
-          if (prev.length === 0) return prev;
-          const newArr = [...prev];
-          const last = newArr[newArr.length - 1];
-          if (last && last.isTyped) {
-            // Speak the completed word!
-            speak(last.phrase);
-            last.isTyped = false; // Mark as "done" so next letter starts new word
-          }
-          return newArr;
-        });
-        return;
-      }
-
-      // 3. Handle Letters (Merges into one tile)
-      if (!isSilent) {
-        // Check if it's a character tile (length 1)
-        if (tile.phrase.length === 1 || tile.id.startsWith('t_')) {
-          setSentence(prev => {
-            const newArr = [...prev];
-            const lastIndex = newArr.length - 1;
-
-            // If last item was also typed and not committed, append to it
-            if (lastIndex >= 0 && newArr[lastIndex].isTyped) {
-              const last = newArr[lastIndex];
-              newArr[lastIndex] = {
-                ...last,
-                label: last.label + tile.label,
-                phrase: last.phrase + tile.phrase
-              };
-              return newArr;
+        // 3. Handle Letters & Numbers (Merges into one tile)
+        if (!isSilent) {
+            // Check if it's a character tile (length 1, or dynamic keyboard ID format)
+            if (tile.phrase.length === 1 || tile.id.startsWith('k_') || tile.id.startsWith('n_')) {
+                 setSentence(prev => {
+                    const newArr = [...prev];
+                    const lastIndex = newArr.length - 1;
+                    
+                    // If last item was also typed and not committed, append to it
+                    if (lastIndex >= 0 && newArr[lastIndex].isTyped) {
+                        const last = newArr[lastIndex];
+                        newArr[lastIndex] = { 
+                            ...last, 
+                            label: last.label + tile.label, 
+                            phrase: last.phrase + tile.phrase 
+                        };
+                        return newArr;
+                    }
+                    // Otherwise start a new typed word
+                    return [...prev, { ...tile, isTyped: true }];
+                 });
+            } else {
+                // Non-character tile on keyboard page (if any)
+                setSentence(prev => [...prev, tile]);
             }
-            // Otherwise start a new typed word
-            return [...prev, { ...tile, isTyped: true }];
-          });
-        } else {
-          // Non-character tile on keyboard page (if any)
-          setSentence(prev => [...prev, tile]);
-        }
 
-        // Speak on select only if enabled (feedback for letter press)
-        if (config.settings.speakOnSelect) {
-          speak(tile.phrase);
+            // Speak on select only if enabled (feedback for letter press)
+            if (config.settings.speakOnSelect) {
+                speak(tile.phrase); 
+            }
         }
-      }
-    }
+    } 
     // --- STANDARD LOGIC ---
     else if (!isSilent) {
       if (config.settings.enableSentenceBuilder) {
@@ -363,39 +412,31 @@ export default function App() {
     const fullText = sentence.map(t => t.phrase).join(" ");
     speak(fullText);
   };
-
+  
   const speakMagicPrediction = (text) => speak(text);
   const clearSentence = () => setSentence([]);
   const removeLastWord = () => setSentence(prev => prev.slice(0, -1));
 
   // --- Helpers ---
   const getFullContext = () => {
-    let parts = [];
-    if (timeContext) parts.push(timeContext);
-    if (locationContext) parts.push(`at ${locationContext}`);
-    return parts.join(' ');
+      let parts = [];
+      if (timeContext) parts.push(timeContext);
+      if (locationContext) parts.push(`at ${locationContext}`);
+      return parts.join(' ');
   };
 
   // --- Drag and Drop Handlers ---
   const handleDragStart = (e, item, type) => {
     if (!isEditMode) return;
-    // CRITICAL FIX: setData allows drag to proceed on Firefox/standard compliance
-    e.dataTransfer.setData('text/plain', item.id);
+    e.dataTransfer.setData('text/plain', item.id); 
     e.dataTransfer.effectAllowed = 'move';
-
-    // Using timeout to avoid dragging element disappearing immediately (optional visual tweak)
-    // setTimeout(() => {
-    if (type === 'tile') {
-      setDraggedTile(item);
-    } else if (type === 'page') {
-      setDraggedPage(item);
-    }
-    // }, 0);
+    if (type === 'tile') setDraggedTile(item);
+    else if (type === 'page') setDraggedPage(item);
   };
 
   const handleDragOver = (e) => {
     if (!isEditMode) return;
-    e.preventDefault(); // Essential for allowing drop
+    e.preventDefault(); 
     e.dataTransfer.dropEffect = 'move';
   };
 
@@ -404,10 +445,7 @@ export default function App() {
     e.preventDefault();
     e.stopPropagation();
 
-    // Retrieve the ID we stored in handleDragStart
     const draggedId = e.dataTransfer.getData('text/plain') || (draggedTile && draggedTile.id);
-
-    // Guard clauses
     if (!draggedId || draggedId === targetTile.id) return;
 
     setConfig(prev => {
@@ -416,12 +454,9 @@ export default function App() {
           const tiles = [...page.tiles];
           const draggedIndex = tiles.findIndex(t => t.id === draggedId);
           const targetIndex = tiles.findIndex(t => t.id === targetTile.id);
-
+          
           if (draggedIndex !== -1 && targetIndex !== -1) {
-            // Reordering Logic:
-            // Remove the item from its old position
             const [movedItem] = tiles.splice(draggedIndex, 1);
-            // Insert it at the new position
             tiles.splice(targetIndex, 0, movedItem);
             return { ...page, tiles };
           }
@@ -439,7 +474,6 @@ export default function App() {
     e.stopPropagation();
 
     const draggedId = e.dataTransfer.getData('text/plain') || (draggedPage && draggedPage.id);
-
     if (!draggedId || draggedId === targetPage.id) return;
 
     setConfig(prev => {
@@ -456,159 +490,20 @@ export default function App() {
     setDraggedPage(null);
   };
 
-  // --- Import/Export ---
-  const downloadJSON = (data, filename) => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-    const a = document.createElement('a');
-    a.href = dataStr;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
+  // --- Settings Updating ---
+  const updateSetting = (key, val) => setConfig(prev => ({ ...prev, settings: { ...prev.settings, [key]: val } }));
 
-  const handleExport = () => downloadJSON(config, "zip_easyspeak_backup.json");
-  const handleExportPage = (page) => {
-    const singlePageConfig = { version: 1, settings: config.settings, pages: [page] };
-    downloadJSON(singlePageConfig, `page_${page.label.replace(/\s+/g, '_').toLowerCase()}.json`);
-  };
-
-  const handleImport = (e) => {
-    const fileReader = new FileReader();
-    fileReader.readAsText(e.target.files[0], "UTF-8");
-    fileReader.onload = evt => {
-      try {
-        const imported = JSON.parse(evt.target.result);
-        if (imported.pages && Array.isArray(imported.pages)) {
-          setConfig(imported);
-          setActivePageId(imported.pages[0].id);
-          alert("Full backup restored!");
-        } else { alert("Invalid config file structure."); }
-      } catch (err) { alert("Error parsing file."); }
-    };
-  };
-
-  const handleMergeImport = (e) => {
-    const fileReader = new FileReader();
-    fileReader.readAsText(e.target.files[0], "UTF-8");
-    fileReader.onload = evt => {
-      try {
-        const imported = JSON.parse(evt.target.result);
-        if (imported.pages && Array.isArray(imported.pages)) {
-          const newPages = imported.pages.map(p => {
-            if (config.pages.some(existing => existing.id === p.id)) {
-              return { ...p, id: generateId(), label: `${p.label} (Imported)` };
+  const updateKeyboardLayoutSetting = (newLayout) => {
+    setConfig(prev => {
+        const newPages = prev.pages.map(p => {
+            if (p.id === 'p_keyboard') {
+                return { ...p, tiles: getKeyboardTiles(newLayout) };
             }
             return p;
-          });
-          setConfig(prev => ({ ...prev, pages: [...prev.pages, ...newPages] }));
-          alert(`Success! Added ${newPages.length} page(s) to your board.`);
-        } else { alert("Invalid file. No pages found."); }
-      } catch (err) { alert("Error parsing file."); }
-    };
+        });
+        return { ...prev, settings: { ...prev.settings, keyboardLayout: newLayout }, pages: newPages };
+    });
   };
-
-  const handleFactoryReset = () => {
-    if (window.confirm("WARNING: This will wipe all pages, buttons, settings, and REMOVE the PIN. This cannot be undone. Are you sure?")) {
-      setConfig(DEFAULT_CONFIG);
-      setPinPrompt(false);
-      setPinInput("");
-      setPinContext(null);
-    }
-  };
-
-  // --- Security ---
-  const requestAccess = (context) => {
-    if (config.settings.adminPin) {
-      setPinContext(context);
-      setPinPrompt(true);
-    } else {
-      if (context === 'edit') setIsEditMode(true);
-      if (context === 'settings') setShowSettings(true);
-    }
-  };
-
-  const verifyPin = () => {
-    if (pinInput === config.settings.adminPin) {
-      setPinPrompt(false);
-      setPinInput("");
-      if (pinContext === 'edit') setIsEditMode(true);
-      if (pinContext === 'settings') setShowSettings(true);
-      setPinContext(null);
-    } else {
-      alert("Incorrect PIN");
-      setPinInput("");
-    }
-  };
-
-  // --- Proxy & Search Logic (Cloudflare Pages Functions) ---
-  const getProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
-  const getImageProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
-
-  const fetchAuthToken = async () => {
-    let secret = config.settings.openSymbolsSecret;
-    try { if (import.meta && import.meta.env) { if (!secret) secret = import.meta.env.VITE_OPENSYMBOLS_TOKEN || ""; } } catch (e) { }
-    if (!secret) throw new Error("Missing Shared Secret. Please add it in Settings.");
-    try {
-      const tokenUrl = "/api/token";
-      const formData = new FormData();
-      formData.append('secret', secret.trim());
-
-      const proxyRes = await fetch(tokenUrl, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!proxyRes.ok) throw new Error(`Auth Failed: ${proxyRes.status}`);
-      const data = await proxyRes.json();
-      if (data.access_token) return data.access_token;
-      throw new Error("No 'access_token' in response. Check Secret.");
-    } catch (e) { console.error("Token exchange failed", e); throw e; }
-  };
-
-  const searchSymbols = async () => {
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    setSearchResults([]);
-    try {
-      let token = accessToken;
-      if (!token) { try { token = await fetchAuthToken(); setAccessToken(token); } catch (e) { console.log("Token fetch failed", e); } }
-
-      let target = `https://www.opensymbols.org/api/v1/symbols/search?q=${encodeURIComponent(searchQuery)}`;
-      if (token) target += `&access_token=${token}`;
-
-      const res = await fetch(getProxyUrl(target));
-
-      if (!res.ok) throw new Error(`API Error`);
-      const data = await res.json();
-      if (Array.isArray(data)) setSearchResults(data);
-      else setSearchResults([]);
-    } catch (error) { console.error(error); alert(`Search failed: ${error.message}`); }
-    finally { setIsSearching(false); }
-  };
-
-  const selectSymbol = async (url) => {
-    setIsDownloading(true);
-    try {
-      const res = await fetch(getImageProxyUrl(url));
-      const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditingTile(prev => ({ ...prev, type: 'image', image: reader.result }));
-        setShowImageSearch(false);
-        setIsDownloading(false);
-        setIsSearching(false);
-      };
-      reader.readAsDataURL(blob);
-    } catch (e) {
-      setEditingTile(prev => ({ ...prev, type: 'image', image: url }));
-      setShowImageSearch(false);
-      setIsDownloading(false);
-      setIsSearching(false);
-    }
-  };
-
-  const updateSetting = (key, val) => setConfig(prev => ({ ...prev, settings: { ...prev.settings, [key]: val } }));
 
   // CRUD Helpers
   const addTile = () => {
@@ -644,9 +539,13 @@ export default function App() {
     setDeleteConfirm(false);
   };
 
+  // Contexts
   const activePage = config.pages.find(p => p.id === activePageId) || config.pages[0];
   const displayedVoices = config.settings.offlineOnly ? availableVoices.filter(v => v.localService) : availableVoices;
   const showLabels = config.settings.showLabels !== false;
+  
+  // Layout Detectors
+  const isCustomRowLayout = (activePage.id === 'p_keyboard' || activePage.id === 'p_numbers') && activePage.tiles.some(t => t.row !== undefined);
 
   const getGridClass = () => {
     const s = config.settings.gridSize;
@@ -656,6 +555,92 @@ export default function App() {
     if (s === 6) return "grid-cols-6";
     if (s === 8) return "grid-cols-8";
     return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
+  };
+
+  // --- Proxy Data Exchanges (Unchanged) ---
+  const downloadJSON = (data, filename) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+  const handleExport = () => downloadJSON(config, "zip_easyspeak_backup.json");
+  const handleExportPage = (page) => downloadJSON({ version: 1, settings: config.settings, pages: [page] }, `page_${page.label.replace(/\s+/g, '_').toLowerCase()}.json`);
+  const handleImport = (e) => {
+    const fileReader = new FileReader();
+    fileReader.readAsText(e.target.files[0], "UTF-8");
+    fileReader.onload = evt => {
+      try {
+        const imported = JSON.parse(evt.target.result);
+        if (imported.pages && Array.isArray(imported.pages)) { setConfig(imported); setActivePageId(imported.pages[0].id); alert("Full backup restored!"); }
+        else alert("Invalid config.");
+      } catch (err) { alert("Error parsing file."); }
+    };
+  };
+  const handleMergeImport = (e) => {
+    const fileReader = new FileReader();
+    fileReader.readAsText(e.target.files[0], "UTF-8");
+    fileReader.onload = evt => {
+      try {
+        const imported = JSON.parse(evt.target.result);
+        if (imported.pages && Array.isArray(imported.pages)) {
+          const newPages = imported.pages.map(p => config.pages.some(existing => existing.id === p.id) ? { ...p, id: generateId(), label: `${p.label} (Imported)` } : p);
+          setConfig(prev => ({ ...prev, pages: [...prev.pages, ...newPages] }));
+          alert(`Success! Added ${newPages.length} page(s).`);
+        } else alert("Invalid file.");
+      } catch (err) { alert("Error parsing file."); }
+    };
+  };
+  const handleFactoryReset = () => {
+    if (window.confirm("WARNING: Wiping all pages and settings! Are you sure?")) { setConfig(DEFAULT_CONFIG); setPinPrompt(false); setPinInput(""); setPinContext(null); }
+  };
+  const requestAccess = (context) => {
+    if (config.settings.adminPin) { setPinContext(context); setPinPrompt(true); } 
+    else { if (context === 'edit') setIsEditMode(true); if (context === 'settings') setShowSettings(true); }
+  };
+  const verifyPin = () => {
+    if (pinInput === config.settings.adminPin) { setPinPrompt(false); setPinInput(""); if (pinContext === 'edit') setIsEditMode(true); if (pinContext === 'settings') setShowSettings(true); setPinContext(null); } 
+    else { alert("Incorrect PIN"); setPinInput(""); }
+  };
+  const getProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
+  const getImageProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
+  const fetchAuthToken = async () => {
+    let secret = config.settings.openSymbolsSecret;
+    try { if (import.meta && import.meta.env) { if (!secret) secret = import.meta.env.VITE_OPENSYMBOLS_TOKEN || ""; } } catch (e) { }
+    if (!secret) throw new Error("Missing Shared Secret.");
+    try {
+      const proxyRes = await fetch("/api/token", { method: 'POST', body: (() => { const fd = new FormData(); fd.append('secret', secret.trim()); return fd;})() });
+      if (!proxyRes.ok) throw new Error(`Auth Failed: ${proxyRes.status}`);
+      const data = await proxyRes.json();
+      if (data.access_token) return data.access_token;
+      throw new Error("No 'access_token' in response.");
+    } catch (e) { throw e; }
+  };
+  const searchSymbols = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true); setSearchResults([]);
+    try {
+      let token = accessToken;
+      if (!token) { try { token = await fetchAuthToken(); setAccessToken(token); } catch (e) { console.log(e); } }
+      let target = `https://www.opensymbols.org/api/v1/symbols/search?q=${encodeURIComponent(searchQuery)}`;
+      if (token) target += `&access_token=${token}`;
+      const res = await fetch(getProxyUrl(target));
+      if (!res.ok) throw new Error(`API Error`);
+      const data = await res.json();
+      setSearchResults(Array.isArray(data) ? data : []);
+    } catch (error) { alert(`Search failed: ${error.message}`); }
+    finally { setIsSearching(false); }
+  };
+  const selectSymbol = async (url) => {
+    setIsDownloading(true);
+    try {
+      const res = await fetch(getImageProxyUrl(url)); const blob = await res.blob(); const reader = new FileReader();
+      reader.onloadend = () => { setEditingTile(prev => ({ ...prev, type: 'image', image: reader.result })); setShowImageSearch(false); setIsDownloading(false); setIsSearching(false); };
+      reader.readAsDataURL(blob);
+    } catch (e) { setEditingTile(prev => ({ ...prev, type: 'image', image: url })); setShowImageSearch(false); setIsDownloading(false); setIsSearching(false); }
   };
 
   // --- Components ---
@@ -789,48 +774,75 @@ export default function App() {
               <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">{activePage.icon} {activePage.label}</h1>
               {isEditMode && <button onClick={() => setEditingPage(activePage)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500"><Edit2 size={16} /></button>}
             </div>
-
+            
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-
-              {/* Location Selector (NEW) */}
-              <div className="flex items-center bg-white/60 rounded-full px-3 py-1.5 border border-white shrink-0">
-                <MapPin size={14} className="text-red-500 mr-2" />
-                <select
-                  value={locationContext}
-                  onChange={(e) => setLocationContext(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-slate-700 outline-none appearance-none cursor-pointer"
-                >
-                  {LOCATIONS.map(loc => <option key={loc.id} value={loc.label}>{loc.icon} {loc.label}</option>)}
-                </select>
-              </div>
-
-              {/* Time Context Indicator (Conditional) */}
-              {timeContext && (
-                <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white shrink-0">
-                  {timeContext === 'morning' && <><Sun size={14} className="text-orange-500" /> Morning</>}
-                  {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600" /> Afternoon</>}
-                  {timeContext === 'evening' && <><Sunset size={14} className="text-indigo-500" /> Evening</>}
+                
+                {/* Location Selector */}
+                <div className="flex items-center bg-white/60 rounded-full px-3 py-1.5 border border-white shrink-0">
+                    <MapPin size={14} className="text-red-500 mr-2" />
+                    <select
+                        value={locationContext}
+                        onChange={(e) => setLocationContext(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-slate-700 outline-none appearance-none cursor-pointer"
+                    >
+                        {LOCATIONS.map(loc => <option key={loc.id} value={loc.label}>{loc.icon} {loc.label}</option>)}
+                    </select>
                 </div>
-              )}
+
+                {/* Time Context Indicator */}
+                {timeContext && (
+                    <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-full text-xs text-indigo-600 font-bold uppercase tracking-wider border border-white shrink-0">
+                        {timeContext === 'morning' && <><Sun size={14} className="text-orange-500"/> Morning</>}
+                        {timeContext === 'afternoon' && <><Sun size={14} className="text-yellow-600"/> Afternoon</>}
+                        {timeContext === 'evening' && <><Sunset size={14} className="text-indigo-500"/> Evening</>}
+                    </div>
+                )}
             </div>
           </div>
         </div>
 
-        {/* Grid */}
-        <div className={`grid ${getGridClass()} gap-4 md:gap-6 pb-20`}>
-          {activePage?.tiles?.map(tile => (
-            <Tile key={tile.id} tile={tile} onClick={handleTileClick} editMode={isEditMode} />
-          ))}
-          {isEditMode && (
-            <button onClick={addTile} className="aspect-square rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
-              <Plus size={48} /> <span className="font-bold mt-2">Add</span>
-            </button>
-          )}
-        </div>
+        {/* Dynamic Grid / Row Layout Render */}
+        {isCustomRowLayout ? (
+          <div className="flex flex-col gap-2 md:gap-4 pb-20 items-center w-full">
+            {/* Group tiles by row property */}
+            {(() => {
+              const rows = [];
+              activePage.tiles.forEach(t => {
+                const r = t.row || 0;
+                if (!rows[r]) rows[r] = [];
+                rows[r].push(t);
+              });
+              
+              return rows.map((rowTiles, rIdx) => (
+                <div key={rIdx} className="flex gap-2 md:gap-3 justify-center w-full max-w-5xl">
+                   {rowTiles.map(tile => (
+                     <div key={tile.id} className="flex-1 max-w-[60px] sm:max-w-[80px] md:max-w-[100px]">
+                       <Tile tile={tile} onClick={handleTileClick} editMode={isEditMode} />
+                     </div>
+                   ))}
+                </div>
+              ));
+            })()}
+            {isEditMode && (
+              <button onClick={addTile} className="mt-4 w-full max-w-sm h-20 rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
+                <Plus size={24} /> <span className="font-bold mt-1 text-sm">Add Custom Key</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className={`grid ${getGridClass()} gap-4 md:gap-6 pb-20`}>
+            {activePage?.tiles?.map(tile => (
+              <Tile key={tile.id} tile={tile} onClick={handleTileClick} editMode={isEditMode} />
+            ))}
+            {isEditMode && (
+              <button onClick={addTile} className="aspect-square rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
+                <Plus size={48} /> <span className="font-bold mt-2">Add</span>
+              </button>
+            )}
+          </div>
+        )}
       </main>
-
-      {/* ... (Existing Modals: Edit Tile, Search, PIN, etc. remain unchanged) ... */}
-
+      
       {/* Edit Tile Modal */}
       {editingTile && !showImageSearch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -910,6 +922,15 @@ export default function App() {
                   <button onClick={() => { setSearchQuery(editingTile.label || ""); setShowImageSearch(true); }} className="p-3 bg-blue-100 text-blue-600 rounded-lg"><Search size={20} /></button>
                 </div>
               </div>
+              
+              {/* Optional Row Override for custom keyboards */}
+              {isCustomRowLayout && (
+                <div>
+                   <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Keyboard Row</label>
+                   <input type="number" min="0" max="5" value={editingTile.row !== undefined ? editingTile.row : ""} onChange={e => setEditingTile({ ...editingTile, row: parseInt(e.target.value) || 0 })} className="w-full p-3 border rounded-lg text-sm" />
+                </div>
+              )}
+
               <button onClick={() => updateTile(editingTile)} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl mt-2">Save</button>
             </div>
           </div>
@@ -1046,6 +1067,21 @@ export default function App() {
                     <option value={8}>8 Columns</option>
                   </select>
                 </div>
+                
+                {/* NEW Keyboard Layout Selection */}
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <label className="block text-sm font-medium mb-1">Keyboard Layout</label>
+                  <select 
+                    value={config.settings.keyboardLayout || "qwerty"} 
+                    onChange={e => updateKeyboardLayoutSetting(e.target.value)} 
+                    className="w-full p-2 border rounded-md text-sm bg-white"
+                  >
+                    <option value="qwerty">QWERTY</option>
+                    <option value="abc">ABC</option>
+                  </select>
+                  <p className="text-[10px] text-slate-500 mt-1">Changes the built-in keyboard arrangement.</p>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="block text-sm font-medium">Show Button Labels</label>
@@ -1083,7 +1119,7 @@ export default function App() {
 
             <hr className="border-slate-100" />
 
-            {/* NEW: AI & Context Settings */}
+            {/* AI & Context Settings */}
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><BrainCircuit size={16} /> AI & Context</h3>
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
