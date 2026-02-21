@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "org.zipsolutions.easyspeakai.twa",
-        "sha256_cert_fingerprints": ["7D:AF:AA:A0:0D:8A:B0:E1:D2:82:19:4D:7C:25:33:7D:58:83:41:8A:D1:45:1B:91:D9:C1:3E:A1:CD:4B:8B:33"]
+        "sha256_cert_fingerprints": ["CF:8B:CB:07:72:95:6A:D0:6E:B2:D8:6B:B3:7D:4B:EA:DF:D3:88:72:F0:46:89:23:12:DB:91:43:3A:41:1E:EF"]
       }
     }]
