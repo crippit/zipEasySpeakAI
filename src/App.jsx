@@ -133,9 +133,10 @@ const DEFAULT_CONFIG = {
     enableSentenceBuilder: true,
     enableTimeContext: true,
     speakOnSelect: false,
-    speakOnSpace: true, // NEW Setting
+    speakOnSpace: true,
+    clearOnSpeak: false, // NEW Setting
     showLabels: true,
-    keyboardLayout: "qwerty", // NEW Setting
+    keyboardLayout: "qwerty",
   },
   pages: [
     {
@@ -411,15 +412,26 @@ export default function App() {
     return predictions && predictions.includes(tileLabel.toLowerCase());
   };
 
+  const clearSentence = () => setSentence([]);
+  const removeLastWord = () => setSentence(prev => prev.slice(0, -1));
+
   const playSentence = () => {
     if (sentence.length === 0) return;
     const fullText = sentence.map(t => t.phrase).join(" ");
     speak(fullText);
+    
+    if (config.settings.clearOnSpeak) {
+        clearSentence();
+    }
   };
   
-  const speakMagicPrediction = (text) => speak(text);
-  const clearSentence = () => setSentence([]);
-  const removeLastWord = () => setSentence(prev => prev.slice(0, -1));
+  const speakMagicPrediction = (text) => {
+    speak(text);
+    
+    if (config.settings.clearOnSpeak) {
+        clearSentence();
+    }
+  };
 
   // --- Helpers ---
   const getFullContext = () => {
@@ -1135,6 +1147,14 @@ export default function App() {
                     <p className="text-xs text-slate-500">Speak typed words when pressing Space</p>
                   </div>
                   <input type="checkbox" checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                </div>
+                
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <div>
+                    <div className="font-bold text-sm">Clear After Speaking</div>
+                    <p className="text-xs text-slate-500">Empty the strip when pressing play</p>
+                  </div>
+                  <input type="checkbox" checked={config.settings.clearOnSpeak === true} onChange={e => updateSetting('clearOnSpeak', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                 </div>
               </div>
             </section>
