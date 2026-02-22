@@ -39,7 +39,8 @@ import {
   MapPin,
   BrainCircuit,
   GripVertical,
-  RefreshCw
+  RefreshCw,
+  Layers
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
@@ -120,7 +121,7 @@ const LOCATIONS = [
 
 // --- Default Configuration Data ---
 const DEFAULT_CONFIG = {
-  version: 2, // Bumped version for update detection
+  version: 3, // Bumped version for Word Variants addition
   settings: {
     voiceURI: null,
     rate: 1.0,
@@ -134,7 +135,7 @@ const DEFAULT_CONFIG = {
     enableTimeContext: true,
     speakOnSelect: false,
     speakOnSpace: true,
-    clearOnSpeak: false, // Ensure this defaults to a safe boolean
+    clearOnSpeak: false, 
     showLabels: true,
     keyboardLayout: "qwerty",
   },
@@ -145,10 +146,10 @@ const DEFAULT_CONFIG = {
       icon: "🏠",
       color: "bg-blue-100",
       tiles: [
-        { id: "t1", label: "I", phrase: "I", image: "🧍", type: "emoji", color: "bg-yellow-200", linkToPage: "", isSilent: false },
-        { id: "t2", label: "Want", phrase: "want", image: "🤲", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false },
-        { id: "t3", label: "Stop", phrase: "Stop it", image: "🛑", type: "emoji", color: "bg-red-300", linkToPage: "", isSilent: false },
-        { id: "t4", label: "More", phrase: "more", image: "➕", type: "emoji", color: "bg-blue-200", linkToPage: "", isSilent: false },
+        { id: "t1", label: "I", phrase: "I", image: "🧍", type: "emoji", color: "bg-yellow-200", linkToPage: "", isSilent: false, variants: ["I", "me", "my", "mine"] },
+        { id: "t2", label: "Want", phrase: "want", image: "🤲", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["want", "wants", "wanted", "wanting"] },
+        { id: "t3", label: "Stop", phrase: "Stop it", image: "🛑", type: "emoji", color: "bg-pink-200", linkToPage: "", isSilent: false },
+        { id: "t4", label: "More", phrase: "more", image: "➕", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
         { id: "t5", label: "Yes", phrase: "Yes", image: "👍", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
         { id: "t6", label: "No", phrase: "No", image: "👎", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
         { id: "t_kb_link", label: "Type", phrase: "", image: "⌨️", type: "emoji", color: "bg-slate-200", linkToPage: "p_keyboard", isSilent: true },
@@ -160,10 +161,10 @@ const DEFAULT_CONFIG = {
       icon: "🍔",
       color: "bg-orange-50",
       tiles: [
-        { id: "f1", label: "Apple", phrase: "apple", image: "🍎", type: "emoji", color: "bg-red-100", linkToPage: "", isSilent: false },
-        { id: "f2", label: "Banana", phrase: "banana", image: "🍌", type: "emoji", color: "bg-yellow-100", linkToPage: "", isSilent: false },
-        { id: "f3", label: "Water", phrase: "water", image: "💧", type: "emoji", color: "bg-blue-100", linkToPage: "", isSilent: false },
-        { id: "f4", label: "Cookie", phrase: "cookie", image: "🍪", type: "emoji", color: "bg-amber-200", linkToPage: "", isSilent: false },
+        { id: "f1", label: "Apple", phrase: "apple", image: "🍎", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["apple", "apples"] },
+        { id: "f2", label: "Banana", phrase: "banana", image: "🍌", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["banana", "bananas"] },
+        { id: "f3", label: "Water", phrase: "water", image: "💧", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f4", label: "Cookie", phrase: "cookie", image: "🍪", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["cookie", "cookies"] },
       ]
     },
     {
@@ -186,6 +187,187 @@ const DEFAULT_CONFIG = {
 const STORAGE_KEY = 'zip_easyspeak_config';
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+// --- TILE COMPONENT (Extracted to prevent React unmount loops) ---
+const Tile = React.memo(({ 
+  tile, 
+  onClick, 
+  editMode, 
+  isKeyboardKey, 
+  isPredicted, 
+  showLabels, 
+  onLongPress, 
+  onDragStart, 
+  onDragOver, 
+  onDrop, 
+  onEdit, 
+  onDelete 
+}) => {
+  const hasVariants = tile.variants && tile.variants.length > 0;
+  
+  // Robust Universal Long Press Logic 
+  const pressTimer = useRef(null);
+  const isLongPress = useRef(false);
+  const pointerStartPos = useRef({ x: 0, y: 0 });
+
+  const handlePressStart = (e) => {
+    if (editMode) return;
+    // Ignore secondary mouse clicks
+    if (e.type === 'mousedown' && e.button !== 0) return;
+
+    isLongPress.current = false;
+    
+    // Capture start position to prevent misfires
+    if (e.touches && e.touches.length > 0) {
+        pointerStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+        pointerStartPos.current = { x: e.clientX, y: e.clientY };
+    }
+
+    if (hasVariants) {
+      if (pressTimer.current) clearTimeout(pressTimer.current);
+      
+      pressTimer.current = setTimeout(() => {
+        isLongPress.current = true;
+        onLongPress(tile);
+        if (navigator.vibrate) {
+            try { navigator.vibrate(50); } catch(err) {}
+        }
+      }, 500); 
+    }
+  };
+
+  const handlePressMove = (e) => {
+      if (!pressTimer.current) return;
+
+      let currentX, currentY;
+      if (e.touches && e.touches.length > 0) {
+          currentX = e.touches[0].clientX;
+          currentY = e.touches[0].clientY;
+      } else {
+          currentX = e.clientX;
+          currentY = e.clientY;
+      }
+
+      const diffX = Math.abs(currentX - pointerStartPos.current.x);
+      const diffY = Math.abs(currentY - pointerStartPos.current.y);
+
+      // Allow up to 15px of movement before cancelling (handles touch squish & mouse jitter)
+      if (diffX > 15 || diffY > 15) {
+          handlePressCancel();
+      }
+  };
+
+  const handlePressCancel = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const handleClick = (e) => {
+    if (editMode) return;
+    
+    // If the timer completed and marked this as a long press, block the click entirely!
+    if (isLongPress.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        isLongPress.current = false; // Reset for next time
+        return;
+    }
+    
+    // Otherwise, process as a normal quick tap
+    onClick(tile);
+  };
+
+  return (
+    <div
+      draggable={editMode}
+      onDragStart={(e) => onDragStart(e, tile)}
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e, tile)}
+      
+      // Standard Touch and Mouse events (more reliable than Pointer events for scrolling pages)
+      onTouchStart={handlePressStart}
+      onTouchEnd={handlePressCancel}
+      onTouchMove={handlePressMove}
+      onTouchCancel={handlePressCancel}
+      
+      onMouseDown={handlePressStart}
+      onMouseUp={handlePressCancel}
+      onMouseMove={handlePressMove}
+      onMouseLeave={handlePressCancel}
+      
+      onClick={handleClick}
+      
+      // CRITICAL FIX: Prevent the browser's right-click/select menu from ruining the long-press
+      onContextMenu={(e) => {
+        if (!editMode && hasVariants) {
+          e.preventDefault(); 
+          // Backup trigger: If Android forces a context menu event, open the variants modal!
+          if (!isLongPress.current) {
+              isLongPress.current = true;
+              onLongPress(tile);
+          }
+        }
+      }}
+      
+      // Inline style safeguards to block iOS callout menus and Android text highlighting
+      style={{ 
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none'
+      }}
+
+      className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
+      ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
+      ${isPredicted ? 'ring-4 ring-yellow-400 ring-offset-2 z-10 scale-105' : ''}
+      ${editMode ? 'cursor-grab active:cursor-grabbing' : ''}
+      `}
+    >
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 pointer-events-none">
+        {tile.type === 'image' ? (
+          <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
+        ) : (
+          <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl' : 'text-5xl md:text-6xl'} select-none pointer-events-none`}>{tile.image}</span>
+        )}
+      </div>
+      {showLabels && (
+        <div className={`w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 ${isKeyboardKey ? 'hidden sm:flex text-sm md:text-base' : 'flex text-sm md:text-base'} truncate items-center justify-center gap-1 pointer-events-none`}>
+          {tile.label}
+          {tile.linkToPage && <ArrowRightCircle size={12} className="text-blue-600 opacity-70" />}
+          {tile.isSilent && editMode && <VolumeX size={12} className="text-red-500 opacity-70" />}
+        </div>
+      )}
+      
+      {/* Visual Indicator that this tile has Grammar Variants hiding inside */}
+      {hasVariants && !editMode && (
+         <div className="absolute bottom-1 right-1.5 flex gap-0.5 pointer-events-none opacity-40">
+           <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
+           <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
+           <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
+         </div>
+      )}
+
+      {isPredicted && (
+        <div className="absolute top-2 right-2 text-yellow-600 animate-pulse pointer-events-none">
+          <Sparkles size={20} fill="currentColor" />
+        </div>
+      )}
+      {editMode && (
+        <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+          {/* Drag Handle Indicator */}
+          <div className="absolute top-2 left-2 p-1 bg-white/50 rounded text-slate-600 cursor-grab pointer-events-auto">
+            <GripVertical size={16} />
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); onEdit(tile); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 text-blue-600 mr-2 pointer-events-auto"><Edit2 size={20} /></button>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(tile.id); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-red-50 text-red-600 pointer-events-auto"><Trash2 size={20} /></button>
+        </div>
+      )}
+    </div>
+  );
+});
+
+
 export default function App() {
   // --- Main State ---
   const [config, setConfig] = useState(() => {
@@ -194,17 +376,24 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         
-        // Safety upgrade injection for users who had the old config format
         let upgradedPages = Array.isArray(parsed.pages) ? [...parsed.pages] : [...DEFAULT_CONFIG.pages];
         
-        // Update old qwerty links to new dynamic keyboard
         upgradedPages.forEach(p => {
             (p.tiles || []).forEach(t => {
                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
+                
+                // FIXED: Inject variants for existing users testing the feature so their local storage isn't broken!
+                if (!t.variants || t.variants.length === 0) {
+                    if (t.label === 'I') t.variants = ["I", "me", "my", "mine"];
+                    else if (t.label === 'Want') t.variants = ["want", "wants", "wanted", "wanting"];
+                    else if (t.label === 'Apple') t.variants = ["apple", "apples"];
+                    else if (t.label === 'Banana') t.variants = ["banana", "bananas"];
+                    else if (t.label === 'Cookie') t.variants = ["cookie", "cookies"];
+                    else t.variants = []; 
+                }
             });
         });
         
-        // Ensure Keyboard and Number pages exist
         if (!upgradedPages.some(p => p.id === 'p_keyboard')) {
              upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_keyboard'));
         }
@@ -212,7 +401,6 @@ export default function App() {
              upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_numbers'));
         }
 
-        // Clean out the old hardcoded qwerty if it still exists to prevent clutter
         upgradedPages = upgradedPages.filter(p => p.id !== 'p_qwerty_full');
 
         return {
@@ -237,6 +425,9 @@ export default function App() {
   // Drag and Drop States
   const [draggedTile, setDraggedTile] = useState(null);
   const [draggedPage, setDraggedPage] = useState(null);
+
+  // Morphology (Variants) State
+  const [activeMorphology, setActiveMorphology] = useState(null);
 
   // --- Effects ---
   useEffect(() => {
@@ -316,54 +507,44 @@ export default function App() {
 
     // --- KEYBOARD & NUMBERS LOGIC ---
     if (isTypingPage) {
-        // 1. Handle Backspace (Character by Character deletion)
         if (tile.id === 't_backspace') {
             setSentence(prev => {
                 if (prev.length === 0) return prev;
                 const newArr = [...prev];
                 const lastIndex = newArr.length - 1;
                 const last = newArr[lastIndex];
-                
-                // If deleting from a typed word, remove last char
                 if (last.isTyped && last.phrase.length > 0) {
                     const newText = last.phrase.slice(0, -1);
-                    if (newText.length === 0) return newArr.slice(0, -1); // Remove entirely if empty
+                    if (newText.length === 0) return newArr.slice(0, -1); 
                     newArr[lastIndex] = { ...last, label: newText, phrase: newText };
                     return newArr;
                 }
-                // Otherwise delete whole tile (standard behavior)
                 return newArr.slice(0, -1);
             });
             return;
         }
         
-        // 2. Handle Space (Commits the word)
         if (tile.id === 't_space') {
             setSentence(prev => {
                 if (prev.length === 0) return prev;
                 const newArr = [...prev];
                 const last = newArr[newArr.length - 1];
                 if (last && last.isTyped) {
-                    // Speak the completed word! (Includes logic for numbers like "10" -> "ten")
                     if (config.settings.speakOnSpace !== false) {
                         speak(last.phrase);
                     }
-                    last.isTyped = false; // Mark as "done" so next letter starts new word
+                    last.isTyped = false; 
                 }
                 return newArr;
             });
             return;
         }
 
-        // 3. Handle Letters & Numbers (Merges into one tile)
         if (!isSilent) {
-            // Check if it's a character tile (length 1, or dynamic keyboard ID format)
             if (tile.phrase.length === 1 || tile.id.startsWith('k_') || tile.id.startsWith('n_')) {
                  setSentence(prev => {
                     const newArr = [...prev];
                     const lastIndex = newArr.length - 1;
-                    
-                    // If last item was also typed and not committed, append to it
                     if (lastIndex >= 0 && newArr[lastIndex].isTyped) {
                         const last = newArr[lastIndex];
                         newArr[lastIndex] = { 
@@ -373,15 +554,12 @@ export default function App() {
                         };
                         return newArr;
                     }
-                    // Otherwise start a new typed word
                     return [...prev, { ...tile, isTyped: true }];
                  });
             } else {
-                // Non-character tile on keyboard page (if any)
                 setSentence(prev => [...prev, tile]);
             }
 
-            // Speak on select only if enabled (feedback for letter press)
             if (config.settings.speakOnSelect) {
                 speak(tile.phrase); 
             }
@@ -403,6 +581,18 @@ export default function App() {
         setActivePageId(targetPage.id);
       }
     }
+  };
+
+  const handleVariantSelect = (variantString) => {
+    // Treat the variant as a completely new standard tile
+    const variantTile = {
+        ...activeMorphology,
+        id: activeMorphology.id + '_' + variantString,
+        label: variantString,
+        phrase: variantString
+    };
+    handleTileClick(variantTile);
+    setActiveMorphology(null);
   };
 
   const getIsPredicted = (tileLabel) => {
@@ -427,13 +617,9 @@ export default function App() {
   
   const speakMagicPrediction = (text) => {
     speak(text);
-    
-    if (config.settings.clearOnSpeak) {
-        clearSentence();
-    }
+    if (config.settings.clearOnSpeak) clearSentence();
   };
 
-  // --- Helpers ---
   const getFullContext = () => {
       let parts = [];
       if (timeContext) parts.push(timeContext);
@@ -529,12 +715,19 @@ export default function App() {
             }
         });
     }
-    window.location.reload(true);
+    if ('caches' in window) {
+        caches.keys().then((names) => {
+            for (let name of names) caches.delete(name);
+        });
+    }
+    setTimeout(() => {
+        window.location.reload(true);
+    }, 500);
   };
 
   // CRUD Helpers
   const addTile = () => {
-    const newTile = { id: generateId(), label: "New", phrase: "New", image: "⬜", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false };
+    const newTile = { id: generateId(), label: "New", phrase: "New", image: "⬜", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false, variants: [] };
     setConfig(p => ({ ...p, pages: p.pages.map(pg => pg.id === activePageId ? { ...pg, tiles: [...(pg.tiles || []), newTile] } : pg) }));
   };
   const updateTile = (t) => {
@@ -571,7 +764,6 @@ export default function App() {
   const displayedVoices = config.settings.offlineOnly ? availableVoices.filter(v => v.localService) : availableVoices;
   const showLabels = config.settings.showLabels !== false;
   
-  // Layout Detectors - Safely check tiles
   const isCustomRowLayout = (activePage?.id === 'p_keyboard' || activePage?.id === 'p_numbers') && (activePage?.tiles || []).some(t => t.row !== undefined);
 
   const getGridClass = () => {
@@ -668,55 +860,6 @@ export default function App() {
       reader.onloadend = () => { setEditingTile(prev => ({ ...prev, type: 'image', image: reader.result })); setShowImageSearch(false); setIsDownloading(false); setIsSearching(false); };
       reader.readAsDataURL(blob);
     } catch (e) { setEditingTile(prev => ({ ...prev, type: 'image', image: url })); setShowImageSearch(false); setIsDownloading(false); setIsSearching(false); }
-  };
-
-  // --- Components ---
-  const Tile = ({ tile, onClick, editMode, isKeyboardKey }) => {
-    const isPredicted = !editMode && getIsPredicted(tile.phrase);
-    return (
-      <div
-        draggable={editMode}
-        onDragStart={(e) => handleDragStart(e, tile, 'tile')}
-        onDragOver={handleDragOver}
-        onDrop={(e) => handleTileDrop(e, tile)}
-        onClick={() => !editMode && onClick(tile)}
-        className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
-        ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
-        ${isPredicted ? 'ring-4 ring-yellow-400 ring-offset-2 z-10 scale-105' : ''}
-        ${editMode ? 'cursor-grab active:cursor-grabbing' : ''}
-        `}
-      >
-        <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 pointer-events-none">
-          {tile.type === 'image' ? (
-            <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
-          ) : (
-            <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl' : 'text-5xl md:text-6xl'} select-none`}>{tile.image}</span>
-          )}
-        </div>
-        {showLabels && (
-          <div className={`w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 ${isKeyboardKey ? 'hidden sm:flex text-sm md:text-base' : 'flex text-sm md:text-base'} truncate items-center justify-center gap-1 pointer-events-none`}>
-            {tile.label}
-            {tile.linkToPage && <ArrowRightCircle size={12} className="text-blue-600 opacity-70" />}
-            {tile.isSilent && editMode && <VolumeX size={12} className="text-red-500 opacity-70" />}
-          </div>
-        )}
-        {isPredicted && (
-          <div className="absolute top-2 right-2 text-yellow-600 animate-pulse pointer-events-none">
-            <Sparkles size={20} fill="currentColor" />
-          </div>
-        )}
-        {editMode && (
-          <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            {/* Drag Handle Indicator */}
-            <div className="absolute top-2 left-2 p-1 bg-white/50 rounded text-slate-600 cursor-grab">
-              <GripVertical size={16} />
-            </div>
-            <button onClick={(e) => { e.stopPropagation(); setEditingTile(tile); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 text-blue-600 mr-2"><Edit2 size={20} /></button>
-            <button onClick={(e) => { e.stopPropagation(); deleteTile(tile.id); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-red-50 text-red-600"><Trash2 size={20} /></button>
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -850,14 +993,25 @@ export default function App() {
               });
               
               return Object.values(rows).map((rowTiles, rIdx) => (
-                // Changed from px-0 to px-0.5 sm:px-0 and reduced gap for mobile to cram keys in tightly
                 <div key={rIdx} className="flex gap-1 sm:gap-2 md:gap-3 justify-center w-full max-w-5xl px-0.5 sm:px-0">
                    {rowTiles.map(tile => {
-                     // The Spacebar gets a larger flex-grow share
                      const isSpace = tile.id === 't_space';
                      return (
                        <div key={tile.id} className={`${isSpace ? 'flex-[2_2_0%]' : 'flex-[1_1_0%]'} sm:max-w-[80px] md:max-w-[100px]`}>
-                         <Tile tile={tile} onClick={handleTileClick} editMode={isEditMode} isKeyboardKey={true} />
+                         <Tile 
+                            tile={tile} 
+                            onClick={handleTileClick} 
+                            editMode={isEditMode} 
+                            isKeyboardKey={true} 
+                            isPredicted={getIsPredicted(tile.phrase)}
+                            showLabels={showLabels}
+                            onLongPress={setActiveMorphology}
+                            onDragStart={(e, t) => handleDragStart(e, t, 'tile')}
+                            onDragOver={handleDragOver}
+                            onDrop={(e, t) => handleTileDrop(e, t)}
+                            onEdit={setEditingTile}
+                            onDelete={deleteTile}
+                         />
                        </div>
                      );
                    })}
@@ -873,7 +1027,20 @@ export default function App() {
         ) : (
           <div className={`grid ${getGridClass()} gap-4 md:gap-6 pb-20`}>
             {(activePage?.tiles || []).map(tile => (
-              <Tile key={tile.id} tile={tile} onClick={handleTileClick} editMode={isEditMode} />
+              <Tile 
+                 key={tile.id} 
+                 tile={tile} 
+                 onClick={handleTileClick} 
+                 editMode={isEditMode} 
+                 isPredicted={getIsPredicted(tile.phrase)}
+                 showLabels={showLabels}
+                 onLongPress={setActiveMorphology}
+                 onDragStart={(e, t) => handleDragStart(e, t, 'tile')}
+                 onDragOver={handleDragOver}
+                 onDrop={(e, t) => handleTileDrop(e, t)}
+                 onEdit={setEditingTile}
+                 onDelete={deleteTile}
+              />
             ))}
             {isEditMode && (
               <button onClick={addTile} className="aspect-square rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
@@ -884,9 +1051,35 @@ export default function App() {
         )}
       </main>
       
+      {/* Morphology / Variants Modal (Triggered by Long Press) */}
+      {activeMorphology && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setActiveMorphology(null)}>
+             <div className="bg-slate-100 p-6 rounded-3xl shadow-2xl max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-xl flex items-center gap-2"><Layers className="text-blue-600" /> Choose Word Form</h3>
+                    <button onClick={() => setActiveMorphology(null)} className="p-2 bg-slate-200 rounded-full text-slate-600 hover:bg-slate-300"><X size={20} /></button>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Render the variants as large, tappable buttons */}
+                    {activeMorphology.variants.map((variant, idx) => (
+                        <button 
+                           key={idx}
+                           onClick={() => handleVariantSelect(variant)}
+                           className={`aspect-square flex flex-col items-center justify-center rounded-2xl shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all text-xl md:text-3xl font-bold bg-white border-black/10`}
+                        >
+                            <span className="text-4xl md:text-5xl mb-2 opacity-50">{activeMorphology.type === 'emoji' ? activeMorphology.image : '🖼️'}</span>
+                            {variant}
+                        </button>
+                    ))}
+                </div>
+             </div>
+          </div>
+      )}
+
       {/* Edit Tile Modal */}
       {editingTile && !showImageSearch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-lg">Edit Button</h3>
@@ -901,6 +1094,22 @@ export default function App() {
                 <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Phrase</label>
                 <textarea value={editingTile.phrase} onChange={e => setEditingTile({ ...editingTile, phrase: e.target.value })} className="w-full p-3 border rounded-lg" rows={2} />
               </div>
+              
+              {/* NEW: Word Variants for Morphology */}
+              <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                <label className="block text-xs font-bold uppercase text-purple-700 mb-1 flex items-center gap-1"><Layers size={14}/> Word Variants (Comma Separated)</label>
+                <input 
+                    type="text" 
+                    value={(editingTile.variants || []).join(', ')} 
+                    onChange={e => setEditingTile({ 
+                        ...editingTile, 
+                        variants: e.target.value.split(',').map(s => s.trim()).filter(s => s !== "") 
+                    })} 
+                    placeholder="e.g. want, wants, wanted, wanting"
+                    className="w-full p-3 border border-purple-200 rounded-lg text-sm bg-white" 
+                />
+                <p className="text-[10px] text-purple-600 mt-1">If filled, users can <b>long-press</b> this button to choose between these forms.</p>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -911,16 +1120,16 @@ export default function App() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Background</label>
-                  <select value={editingTile.color} onChange={e => setEditingTile({ ...editingTile, color: e.target.value })} className="w-full p-3 border rounded-lg bg-white">
-                    <option value="bg-white">White</option>
-                    <option value="bg-red-200">Red</option>
-                    <option value="bg-blue-200">Blue</option>
-                    <option value="bg-green-200">Green</option>
-                    <option value="bg-yellow-200">Yellow</option>
-                    <option value="bg-orange-200">Orange</option>
-                    <option value="bg-purple-200">Purple</option>
-                    <option value="bg-pink-200">Pink</option>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Color (Fitzgerald Key)</label>
+                  <select value={editingTile.color} onChange={e => setEditingTile({ ...editingTile, color: e.target.value })} className="w-full p-3 border rounded-lg bg-white text-sm">
+                    <option value="bg-white">White (Misc/Core)</option>
+                    <option value="bg-yellow-200">Yellow (People/Pronouns)</option>
+                    <option value="bg-green-200">Green (Verbs/Actions)</option>
+                    <option value="bg-orange-200">Orange (Nouns/Things)</option>
+                    <option value="bg-blue-200">Blue (Adjectives)</option>
+                    <option value="bg-pink-200">Pink (Social)</option>
+                    <option value="bg-purple-200">Purple (Questions)</option>
+                    <option value="bg-red-200">Red (Important)</option>
                   </select>
                 </div>
               </div>
@@ -980,12 +1189,12 @@ export default function App() {
 
       {/* Image Search Modal */}
       {showImageSearch && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col relative overflow-hidden">
 
             {/* Loading Overlay */}
             {isDownloading && (
-              <div className="absolute inset-0 z-[70] bg-white/80 flex flex-col items-center justify-center">
+              <div className="absolute inset-0 z-[90] bg-white/80 flex flex-col items-center justify-center">
                 <Loader2 size={64} className="animate-spin text-blue-600 mb-4" />
                 <h3 className="text-xl font-bold text-slate-700">Downloading Image...</h3>
                 <p className="text-sm text-slate-500">Please wait while we save it offline.</p>
@@ -1022,7 +1231,7 @@ export default function App() {
 
       {/* Edit Page Modal */}
       {editingPage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
             <div className="p-4 border-b flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-lg">Edit Page</h3>
@@ -1067,7 +1276,7 @@ export default function App() {
 
       {/* PIN Prompt */}
       {pinPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
             <Lock className="mx-auto text-blue-600 mb-4" size={40} />
             <h3 className="font-bold text-lg mb-2">Enter Admin PIN</h3>
@@ -1138,7 +1347,8 @@ export default function App() {
             {/* Mode Settings */}
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><MessageSquare size={16} /> Interaction Mode</h3>
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+                
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-sm">Sentence Builder</div>
@@ -1155,7 +1365,7 @@ export default function App() {
                         <div className="font-bold text-sm text-blue-700">Clear After Speaking</div>
                         <p className="text-xs text-slate-500">Empty the strip when playing</p>
                       </div>
-                      <input type="checkbox" checked={!!config.settings.clearOnSpeak} onChange={e => updateSetting('clearOnSpeak', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                      <input type="checkbox" disabled={!config.settings.enableSentenceBuilder} checked={!!config.settings.clearOnSpeak} onChange={e => updateSetting('clearOnSpeak', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200 pl-4">
@@ -1163,7 +1373,7 @@ export default function App() {
                         <div className="font-bold text-sm">Speak on Select</div>
                         <p className="text-xs text-slate-500">Speak each word as it is added</p>
                       </div>
-                      <input type="checkbox" checked={!!config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                      <input type="checkbox" disabled={!config.settings.enableSentenceBuilder} checked={!!config.settings.speakOnSelect} onChange={e => updateSetting('speakOnSelect', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                     </div>
                     
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200 pl-4">
@@ -1171,7 +1381,7 @@ export default function App() {
                         <div className="font-bold text-sm">Speak Typed Words</div>
                         <p className="text-xs text-slate-500">Speak typed words on Space</p>
                       </div>
-                      <input type="checkbox" checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
+                      <input type="checkbox" disabled={!config.settings.enableSentenceBuilder} checked={config.settings.speakOnSpace !== false} onChange={e => updateSetting('speakOnSpace', e.target.checked)} className="w-5 h-5 accent-blue-600" />
                     </div>
                   </>
                 )}
@@ -1284,8 +1494,7 @@ export default function App() {
 
             <hr className="border-slate-100" />
             
-            {/* FORCE APP REFRESH BUTTON */}
-            <button onClick={forceAppReload} className="w-full flex items-center justify-center gap-2 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors">
+            <button onClick={forceAppReload} className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors">
                 <RefreshCw size={18} /> Clear App Cache
             </button>
 
