@@ -677,36 +677,56 @@ export default function App() {
     const isPredicted = !editMode && getIsPredicted(tile.phrase);
     const hasVariants = tile.variants && tile.variants.length > 0;
     
-    // Robust Mobile Long Press Logic
+    // Robust Universal Long Press Logic (Mouse, Touch, Pen)
     const pressTimer = useRef(null);
     const isLongPress = useRef(false);
+    const pointerStartPos = useRef({ x: 0, y: 0 });
 
     const handlePointerDown = (e) => {
       if (editMode) return;
-      
       // Ignore secondary mouse clicks
-      if (e.button && e.button !== 0) return;
+      if (e.button !== undefined && e.button !== 0) return;
 
       isLongPress.current = false;
+      // Capture starting position for both mouse and touch
+      pointerStartPos.current = { x: e.clientX, y: e.clientY };
+
       if (hasVariants) {
+        if (pressTimer.current) clearTimeout(pressTimer.current);
+        
         pressTimer.current = setTimeout(() => {
           isLongPress.current = true;
           setActiveMorphology(tile);
-          if (navigator.vibrate) navigator.vibrate(50);
+          if (navigator.vibrate) {
+              try { navigator.vibrate(50); } catch(err) {}
+          }
         }, 500); 
       }
     };
 
-    const handlePointerUpOrCancel = () => {
+    const handlePointerMove = (e) => {
+        if (!pressTimer.current) return;
+
+        const diffX = Math.abs(e.clientX - pointerStartPos.current.x);
+        const diffY = Math.abs(e.clientY - pointerStartPos.current.y);
+
+        // Allow up to 15px of movement before cancelling (handles touch squish & mouse jitter)
+        if (diffX > 15 || diffY > 15) {
+            handlePointerCancel();
+        }
+    };
+
+    const handlePointerCancel = () => {
       if (pressTimer.current) {
         clearTimeout(pressTimer.current);
+        pressTimer.current = null;
       }
     };
 
     const handleClick = (e) => {
       if (editMode) return;
       
-      // If the timer completed and marked this as a long press, block the click!
+      // If the timer completed and marked this as a long press, block the click entirely!
       if (isLongPress.current) {
           e.preventDefault();
           e.stopPropagation();
@@ -725,22 +745,32 @@ export default function App() {
         onDragOver={handleDragOver}
         onDrop={(e) => handleTileDrop(e, tile)}
         
-        // Touch / Pointer Event Listeners
+        // Unified Pointer Events for reliable cross-device holds
         onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUpOrCancel}
-        onPointerLeave={handlePointerUpOrCancel}
-        onPointerCancel={handlePointerUpOrCancel}
+        onPointerUp={handlePointerCancel}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerCancel}
+        onPointerCancel={handlePointerCancel}
         onClick={handleClick}
         
         // CRITICAL FIX: Prevent the browser's right-click/select menu from ruining the long-press
         onContextMenu={(e) => {
           if (!editMode && hasVariants) {
             e.preventDefault(); 
+            // Backup trigger: If Android forces a context menu event, open the variants modal!
+            if (!isLongPress.current) {
+                isLongPress.current = true;
+                setActiveMorphology(tile);
+            }
           }
         }}
         
-        // Inline style safeguard to block iOS callout menus
-        style={{ WebkitTouchCallout: 'none' }}
+        // Inline style safeguards to block iOS callout menus and Android text highlighting
+        style={{ 
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none'
+        }}
 
         className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
         ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
@@ -752,7 +782,7 @@ export default function App() {
           {tile.type === 'image' ? (
             <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
           ) : (
-            <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl' : 'text-5xl md:text-6xl'} select-none`}>{tile.image}</span>
+            <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl' : 'text-5xl md:text-6xl'} select-none pointer-events-none`}>{tile.image}</span>
           )}
         </div>
         {showLabels && (
@@ -766,9 +796,9 @@ export default function App() {
         {/* Visual Indicator that this tile has Grammar Variants hiding inside */}
         {hasVariants && !editMode && (
            <div className="absolute bottom-1 right-1.5 flex gap-0.5 pointer-events-none opacity-40">
-             <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
-             <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
-             <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
+             <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
+             <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
+             <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
            </div>
         )}
 
@@ -778,13 +808,13 @@ export default function App() {
           </div>
         )}
         {editMode && (
-          <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
             {/* Drag Handle Indicator */}
-            <div className="absolute top-2 left-2 p-1 bg-white/50 rounded text-slate-600 cursor-grab">
+            <div className="absolute top-2 left-2 p-1 bg-white/50 rounded text-slate-600 cursor-grab pointer-events-auto">
               <GripVertical size={16} />
             </div>
-            <button onClick={(e) => { e.stopPropagation(); setEditingTile(tile); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 text-blue-600 mr-2"><Edit2 size={20} /></button>
-            <button onClick={(e) => { e.stopPropagation(); deleteTile(tile.id); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-red-50 text-red-600"><Trash2 size={20} /></button>
+            <button onClick={(e) => { e.stopPropagation(); setEditingTile(tile); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 text-blue-600 mr-2 pointer-events-auto"><Edit2 size={20} /></button>
+            <button onClick={(e) => { e.stopPropagation(); deleteTile(tile.id); }} className="p-3 bg-white rounded-full shadow-lg hover:bg-red-50 text-red-600 pointer-events-auto"><Trash2 size={20} /></button>
           </div>
         )}
       </div>
