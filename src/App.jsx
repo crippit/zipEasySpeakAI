@@ -204,19 +204,24 @@ const Tile = React.memo(({
 }) => {
   const hasVariants = tile.variants && tile.variants.length > 0;
   
-  // Robust Universal Long Press Logic (Mouse, Touch, Pen)
+  // Robust Universal Long Press Logic 
   const pressTimer = useRef(null);
   const isLongPress = useRef(false);
   const pointerStartPos = useRef({ x: 0, y: 0 });
 
-  const handlePointerDown = (e) => {
+  const handlePressStart = (e) => {
     if (editMode) return;
     // Ignore secondary mouse clicks
-    if (e.button !== undefined && e.button !== 0) return;
+    if (e.type === 'mousedown' && e.button !== 0) return;
 
     isLongPress.current = false;
-    // Capture starting position for both mouse and touch
-    pointerStartPos.current = { x: e.clientX, y: e.clientY };
+    
+    // Capture start position to prevent misfires
+    if (e.touches && e.touches.length > 0) {
+        pointerStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+        pointerStartPos.current = { x: e.clientX, y: e.clientY };
+    }
 
     if (hasVariants) {
       if (pressTimer.current) clearTimeout(pressTimer.current);
@@ -231,19 +236,28 @@ const Tile = React.memo(({
     }
   };
 
-  const handlePointerMove = (e) => {
+  const handlePressMove = (e) => {
       if (!pressTimer.current) return;
 
-      const diffX = Math.abs(e.clientX - pointerStartPos.current.x);
-      const diffY = Math.abs(e.clientY - pointerStartPos.current.y);
+      let currentX, currentY;
+      if (e.touches && e.touches.length > 0) {
+          currentX = e.touches[0].clientX;
+          currentY = e.touches[0].clientY;
+      } else {
+          currentX = e.clientX;
+          currentY = e.clientY;
+      }
+
+      const diffX = Math.abs(currentX - pointerStartPos.current.x);
+      const diffY = Math.abs(currentY - pointerStartPos.current.y);
 
       // Allow up to 15px of movement before cancelling (handles touch squish & mouse jitter)
       if (diffX > 15 || diffY > 15) {
-          handlePointerCancel();
+          handlePressCancel();
       }
   };
 
-  const handlePointerCancel = () => {
+  const handlePressCancel = () => {
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
       pressTimer.current = null;
@@ -272,12 +286,17 @@ const Tile = React.memo(({
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, tile)}
       
-      // Unified Pointer Events for reliable cross-device holds
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerCancel}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerCancel}
-      onPointerCancel={handlePointerCancel}
+      // Standard Touch and Mouse events (more reliable than Pointer events for scrolling pages)
+      onTouchStart={handlePressStart}
+      onTouchEnd={handlePressCancel}
+      onTouchMove={handlePressMove}
+      onTouchCancel={handlePressCancel}
+      
+      onMouseDown={handlePressStart}
+      onMouseUp={handlePressCancel}
+      onMouseMove={handlePressMove}
+      onMouseLeave={handlePressCancel}
+      
       onClick={handleClick}
       
       // CRITICAL FIX: Prevent the browser's right-click/select menu from ruining the long-press
@@ -296,8 +315,7 @@ const Tile = React.memo(({
       style={{ 
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
-          userSelect: 'none',
-          touchAction: 'none' // CRITICAL for reliable pointer events on mobile
+          userSelect: 'none'
       }}
 
       className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
@@ -363,7 +381,16 @@ export default function App() {
         upgradedPages.forEach(p => {
             (p.tiles || []).forEach(t => {
                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
-                if (!t.variants) t.variants = []; // Ensure old configs get the variants array
+                
+                // FIXED: Inject variants for existing users testing the feature so their local storage isn't broken!
+                if (!t.variants || t.variants.length === 0) {
+                    if (t.label === 'I') t.variants = ["I", "me", "my", "mine"];
+                    else if (t.label === 'Want') t.variants = ["want", "wants", "wanted", "wanting"];
+                    else if (t.label === 'Apple') t.variants = ["apple", "apples"];
+                    else if (t.label === 'Banana') t.variants = ["banana", "bananas"];
+                    else if (t.label === 'Cookie') t.variants = ["cookie", "cookies"];
+                    else t.variants = []; 
+                }
             });
         });
         
