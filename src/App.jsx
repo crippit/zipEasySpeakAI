@@ -57,13 +57,14 @@ import { NEXT_WORD_PREDICTIONS } from './services/ai';
  */
 
 // --- FIREBASE INITIALIZATION ---
+// Using Environment Variables to keep keys out of public source control
 const firebaseConfig = {
-  apiKey: "AIzaSyArrlwfXCglMop8RBLKbphZhtJJJ4leYJI",
-  authDomain: "easyspeakai.firebaseapp.com",
-  projectId: "easyspeakai",
-  storageBucket: "easyspeakai.firebasestorage.app",
-  messagingSenderId: "866097074609",
-  appId: "1:866097074609:web:0215ce7948c97289512d90"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const fbApp = initializeApp(firebaseConfig);
