@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from "firebase/app";
+import { getAuth, signInAnonymously } from "firebase/auth";
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 import {
   Settings,
   Lock,
@@ -40,7 +43,10 @@ import {
   BrainCircuit,
   GripVertical,
   RefreshCw,
-  Layers
+  Layers,
+  Globe,
+  Link,
+  ShieldCheck
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
@@ -49,6 +55,21 @@ import { NEXT_WORD_PREDICTIONS } from './services/ai';
  * Zip EasySpeak AAC
  * Developed by Zip Solutions
  */
+
+// --- FIREBASE INITIALIZATION ---
+const firebaseConfig = {
+  apiKey: "AIzaSyArrlwfXCglMop8RBLKbphZhtJJJ4leYJI",
+  authDomain: "easyspeakai.firebaseapp.com",
+  projectId: "easyspeakai",
+  storageBucket: "easyspeakai.firebasestorage.app",
+  messagingSenderId: "866097074609",
+  appId: "1:866097074609:web:0215ce7948c97289512d90"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const fbAuth = getAuth(fbApp);
+const fbDb = getFirestore(fbApp);
+
 
 // --- Keyboard Generators ---
 const getKeyboardTiles = (type) => {
@@ -121,7 +142,7 @@ const LOCATIONS = [
 
 // --- Default Configuration Data ---
 const DEFAULT_CONFIG = {
-  version: 3, // Bumped version for Word Variants addition
+  version: 3,
   settings: {
     voiceURI: null,
     rate: 1.0,
@@ -145,6 +166,7 @@ const DEFAULT_CONFIG = {
       label: "Core",
       icon: "🏠",
       color: "bg-blue-100",
+      type: "local",
       tiles: [
         { id: "t1", label: "I", phrase: "I", image: "🧍", type: "emoji", color: "bg-yellow-200", linkToPage: "", isSilent: false, variants: ["I", "me", "my", "mine"] },
         { id: "t2", label: "Want", phrase: "want", image: "🤲", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["want", "wants", "wanted", "wanting"] },
@@ -160,6 +182,7 @@ const DEFAULT_CONFIG = {
       label: "Food",
       icon: "🍔",
       color: "bg-orange-50",
+      type: "local",
       tiles: [
         { id: "f1", label: "Apple", phrase: "apple", image: "🍎", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["apple", "apples"] },
         { id: "f2", label: "Banana", phrase: "banana", image: "🍌", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["banana", "bananas"] },
@@ -172,6 +195,7 @@ const DEFAULT_CONFIG = {
       label: "Keyboard",
       icon: "⌨️",
       color: "bg-slate-100",
+      type: "local",
       tiles: getKeyboardTiles("qwerty")
     },
     {
@@ -179,6 +203,7 @@ const DEFAULT_CONFIG = {
       label: "Numbers",
       icon: "1️⃣",
       color: "bg-slate-100",
+      type: "local",
       tiles: getNumbersTiles()
     }
   ]
@@ -186,8 +211,16 @@ const DEFAULT_CONFIG = {
 
 const STORAGE_KEY = 'zip_easyspeak_config';
 const generateId = () => Math.random().toString(36).substr(2, 9);
+const generateDeviceId = () => {
+    let id = localStorage.getItem('zip_device_id');
+    if (!id) {
+        id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('zip_device_id', id);
+    }
+    return id;
+};
 
-// --- TILE COMPONENT (Extracted to prevent React unmount loops) ---
+// --- TILE COMPONENT ---
 const Tile = React.memo(({ 
   tile, 
   onClick, 
@@ -200,7 +233,8 @@ const Tile = React.memo(({
   onDragOver, 
   onDrop, 
   onEdit, 
-  onDelete 
+  onDelete,
+  isManagedPage
 }) => {
   const hasVariants = tile.variants && tile.variants.length > 0;
   
@@ -211,12 +245,10 @@ const Tile = React.memo(({
 
   const handlePressStart = (e) => {
     if (editMode) return;
-    // Ignore secondary mouse clicks
     if (e.type === 'mousedown' && e.button !== 0) return;
 
     isLongPress.current = false;
     
-    // Capture start position to prevent misfires
     if (e.touches && e.touches.length > 0) {
         pointerStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     } else {
@@ -251,7 +283,6 @@ const Tile = React.memo(({
       const diffX = Math.abs(currentX - pointerStartPos.current.x);
       const diffY = Math.abs(currentY - pointerStartPos.current.y);
 
-      // Allow up to 15px of movement before cancelling (handles touch squish & mouse jitter)
       if (diffX > 15 || diffY > 15) {
           handlePressCancel();
       }
@@ -267,26 +298,23 @@ const Tile = React.memo(({
   const handleClick = (e) => {
     if (editMode) return;
     
-    // If the timer completed and marked this as a long press, block the click entirely!
     if (isLongPress.current) {
         e.preventDefault();
         e.stopPropagation();
-        isLongPress.current = false; // Reset for next time
+        isLongPress.current = false; 
         return;
     }
     
-    // Otherwise, process as a normal quick tap
     onClick(tile);
   };
 
   return (
     <div
-      draggable={editMode}
+      draggable={editMode && !isManagedPage}
       onDragStart={(e) => onDragStart(e, tile)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, tile)}
       
-      // Standard Touch and Mouse events (more reliable than Pointer events for scrolling pages)
       onTouchStart={handlePressStart}
       onTouchEnd={handlePressCancel}
       onTouchMove={handlePressMove}
@@ -299,11 +327,9 @@ const Tile = React.memo(({
       
       onClick={handleClick}
       
-      // CRITICAL FIX: Prevent the browser's right-click/select menu from ruining the long-press
       onContextMenu={(e) => {
         if (!editMode && hasVariants) {
           e.preventDefault(); 
-          // Backup trigger: If Android forces a context menu event, open the variants modal!
           if (!isLongPress.current) {
               isLongPress.current = true;
               onLongPress(tile);
@@ -311,17 +337,12 @@ const Tile = React.memo(({
         }
       }}
       
-      // Inline style safeguards to block iOS callout menus and Android text highlighting
-      style={{ 
-          WebkitTouchCallout: 'none',
-          WebkitUserSelect: 'none',
-          userSelect: 'none'
-      }}
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
 
       className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
       ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
       ${isPredicted ? 'ring-4 ring-yellow-400 ring-offset-2 z-10 scale-105' : ''}
-      ${editMode ? 'cursor-grab active:cursor-grabbing' : ''}
+      ${editMode && !isManagedPage ? 'cursor-grab active:cursor-grabbing' : ''}
       `}
     >
       <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 pointer-events-none">
@@ -339,7 +360,6 @@ const Tile = React.memo(({
         </div>
       )}
       
-      {/* Visual Indicator that this tile has Grammar Variants hiding inside */}
       {hasVariants && !editMode && (
          <div className="absolute bottom-1 right-1.5 flex gap-0.5 pointer-events-none opacity-40">
            <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
@@ -353,9 +373,10 @@ const Tile = React.memo(({
           <Sparkles size={20} fill="currentColor" />
         </div>
       )}
-      {editMode && (
+      
+      {/* Hidden block if it's a managed page so teachers can't edit it locally */}
+      {editMode && !isManagedPage && (
         <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-          {/* Drag Handle Indicator */}
           <div className="absolute top-2 left-2 p-1 bg-white/50 rounded text-slate-600 cursor-grab pointer-events-auto">
             <GripVertical size={16} />
           </div>
@@ -369,7 +390,18 @@ const Tile = React.memo(({
 
 
 export default function App() {
-  // --- Main State ---
+  // --- Firebase & Linking State ---
+  const [deviceId] = useState(generateDeviceId);
+  const [linkedStudentId, setLinkedStudentId] = useState(() => localStorage.getItem('zip_student_id') || null);
+  const [isPairing, setIsPairing] = useState(false);
+  const [appPairingCode, setAppPairingCode] = useState(null);
+
+  // Authenticate Anonymously for Firebase Access
+  useEffect(() => {
+      signInAnonymously(fbAuth).catch(console.error);
+  }, []);
+
+  // --- Main Config State ---
   const [config, setConfig] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -379,10 +411,9 @@ export default function App() {
         let upgradedPages = Array.isArray(parsed.pages) ? [...parsed.pages] : [...DEFAULT_CONFIG.pages];
         
         upgradedPages.forEach(p => {
+            if (!p.type) p.type = 'local'; // Default existing pages to local
             (p.tiles || []).forEach(t => {
                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
-                
-                // FIXED: Inject variants for existing users testing the feature so their local storage isn't broken!
                 if (!t.variants || t.variants.length === 0) {
                     if (t.label === 'I') t.variants = ["I", "me", "my", "mine"];
                     else if (t.label === 'Want') t.variants = ["want", "wants", "wanted", "wanting"];
@@ -394,21 +425,12 @@ export default function App() {
             });
         });
         
-        if (!upgradedPages.some(p => p.id === 'p_keyboard')) {
-             upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_keyboard'));
-        }
-        if (!upgradedPages.some(p => p.id === 'p_numbers')) {
-             upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_numbers'));
-        }
+        if (!upgradedPages.some(p => p.id === 'p_keyboard')) upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_keyboard'));
+        if (!upgradedPages.some(p => p.id === 'p_numbers')) upgradedPages.push(DEFAULT_CONFIG.pages.find(p => p.id === 'p_numbers'));
 
         upgradedPages = upgradedPages.filter(p => p.id !== 'p_qwerty_full');
 
-        return {
-          ...DEFAULT_CONFIG,
-          ...parsed,
-          settings: { ...DEFAULT_CONFIG.settings, ...(parsed.settings || {}) },
-          pages: upgradedPages
-        };
+        return { ...DEFAULT_CONFIG, ...parsed, settings: { ...DEFAULT_CONFIG.settings, ...(parsed.settings || {}) }, pages: upgradedPages };
       }
     } catch (e) {
       console.error("Failed to load config", e);
@@ -416,42 +438,63 @@ export default function App() {
     return DEFAULT_CONFIG;
   });
 
+  // --- Firebase Sync Effect ---
+  // Listens to the Student's profile and merges down 'Managed Pages'
+  useEffect(() => {
+    if (!linkedStudentId) return;
+    
+    const studentRef = doc(fbDb, 'students', linkedStudentId);
+    const unsub = onSnapshot(studentRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        // Handle Unlinking initiated by the Teacher Dashboard
+        if (data.device === 'Unlinked') {
+           setLinkedStudentId(null);
+           localStorage.removeItem('zip_student_id');
+           setConfig(prev => ({ ...prev, pages: prev.pages.filter(p => p.type !== 'managed') }));
+           alert("This device has been unlinked by the school.");
+           return;
+        }
+
+        // Merge managed pages from Firebase
+        setConfig(prev => {
+          const localPages = prev.pages.filter(p => p.type !== 'managed');
+          const managedPages = data.pages || [];
+          
+          // Re-map keyboard links just in case
+          managedPages.forEach(p => {
+             (p.tiles || []).forEach(t => {
+                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
+             });
+          });
+
+          return { ...prev, pages: [...localPages, ...managedPages] };
+        });
+
+        // Report heartbeat back to dashboard
+        updateDoc(studentRef, { 
+          status: 'online', 
+          lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+        }).catch(e => console.warn(e));
+
+      } else {
+        // Profile deleted entirely
+        setLinkedStudentId(null);
+        localStorage.removeItem('zip_student_id');
+      }
+    });
+
+    return () => unsub();
+  }, [linkedStudentId]);
+
+
   const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
-  
-  // Context States
   const [timeContext, setTimeContext] = useState(''); 
   const [locationContext, setLocationContext] = useState('Home');
-
-  // Drag and Drop States
   const [draggedTile, setDraggedTile] = useState(null);
   const [draggedPage, setDraggedPage] = useState(null);
-
-  // Morphology (Variants) State
   const [activeMorphology, setActiveMorphology] = useState(null);
-
-  // --- Effects ---
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  }, [config]);
-
-  // Time of Day Detection
-  useEffect(() => {
-    const updateTimeContext = () => {
-        if (!config.settings.enableTimeContext) {
-            setTimeContext('');
-            return;
-        }
-        const h = new Date().getHours();
-        if (h >= 5 && h < 12) setTimeContext('morning');
-        else if (h >= 12 && h < 18) setTimeContext('afternoon');
-        else setTimeContext('evening');
-    };
-    
-    updateTimeContext();
-    const interval = setInterval(updateTimeContext, 60000 * 5); // Check every 5 mins
-    return () => clearInterval(interval);
-  }, [config.settings.enableTimeContext]); 
-
   const [isEditMode, setIsEditMode] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
   const [sentence, setSentence] = useState([]); 
@@ -474,6 +517,27 @@ export default function App() {
 
   const fileInputRef = useRef(null);
   const mergeInputRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  }, [config]);
+
+  useEffect(() => {
+    const updateTimeContext = () => {
+        if (!config.settings.enableTimeContext) {
+            setTimeContext('');
+            return;
+        }
+        const h = new Date().getHours();
+        if (h >= 5 && h < 12) setTimeContext('morning');
+        else if (h >= 12 && h < 18) setTimeContext('afternoon');
+        else setTimeContext('evening');
+    };
+    
+    updateTimeContext();
+    const interval = setInterval(updateTimeContext, 60000 * 5);
+    return () => clearInterval(interval);
+  }, [config.settings.enableTimeContext]); 
 
   useEffect(() => {
     const loadVoices = () => {
@@ -505,7 +569,6 @@ export default function App() {
     const isSilent = tile.isSilent === true;
     const isTypingPage = activePageId === 'p_keyboard' || activePageId === 'p_numbers';
 
-    // --- KEYBOARD & NUMBERS LOGIC ---
     if (isTypingPage) {
         if (tile.id === 't_backspace') {
             setSentence(prev => {
@@ -530,9 +593,7 @@ export default function App() {
                 const newArr = [...prev];
                 const last = newArr[newArr.length - 1];
                 if (last && last.isTyped) {
-                    if (config.settings.speakOnSpace !== false) {
-                        speak(last.phrase);
-                    }
+                    if (config.settings.speakOnSpace !== false) speak(last.phrase);
                     last.isTyped = false; 
                 }
                 return newArr;
@@ -559,14 +620,9 @@ export default function App() {
             } else {
                 setSentence(prev => [...prev, tile]);
             }
-
-            if (config.settings.speakOnSelect) {
-                speak(tile.phrase); 
-            }
+            if (config.settings.speakOnSelect) speak(tile.phrase); 
         }
-    } 
-    // --- STANDARD LOGIC ---
-    else if (!isSilent) {
+    } else if (!isSilent) {
       if (config.settings.enableSentenceBuilder) {
         setSentence(prev => [...prev, tile]);
         if (config.settings.speakOnSelect) speak(tile.phrase);
@@ -577,14 +633,11 @@ export default function App() {
 
     if (tile.linkToPage && tile.linkToPage !== "") {
       const targetPage = config.pages.find(p => p.id === tile.linkToPage);
-      if (targetPage) {
-        setActivePageId(targetPage.id);
-      }
+      if (targetPage) setActivePageId(targetPage.id);
     }
   };
 
   const handleVariantSelect = (variantString) => {
-    // Treat the variant as a completely new standard tile
     const variantTile = {
         ...activeMorphology,
         id: activeMorphology.id + '_' + variantString,
@@ -609,10 +662,7 @@ export default function App() {
     if (sentence.length === 0) return;
     const fullText = sentence.map(t => t.phrase).join(" ");
     speak(fullText);
-    
-    if (config.settings.clearOnSpeak) {
-        clearSentence();
-    }
+    if (config.settings.clearOnSpeak) clearSentence();
   };
   
   const speakMagicPrediction = (text) => {
@@ -626,6 +676,44 @@ export default function App() {
       if (locationContext) parts.push(`at ${locationContext}`);
       return parts.join(' ');
   };
+
+  // --- Device Pairing Flow ---
+  const handleGeneratePairingCode = async () => {
+    setIsPairing(true);
+    // Generate 10 char code
+    const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // removed O,0,1,I for clarity
+    let code = '';
+    for (let i=0; i<10; i++) code += charset.charAt(Math.floor(Math.random() * charset.length));
+    
+    setAppPairingCode(code);
+    
+    try {
+      const codeRef = doc(fbDb, 'pairing_codes', code);
+      await setDoc(codeRef, {
+        deviceId,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      });
+
+      // Listen for dashboard to approve
+      const unsub = onSnapshot(codeRef, (docSnap) => {
+        const data = docSnap.data();
+        if (data && data.status === 'linked' && data.studentId) {
+           setLinkedStudentId(data.studentId);
+           localStorage.setItem('zip_student_id', data.studentId);
+           setIsPairing(false);
+           setAppPairingCode(null);
+           unsub();
+           alert("Successfully connected to school district!");
+        }
+      });
+    } catch(e) {
+      console.error("Pairing Error:", e);
+      alert("Failed to generate linking code.");
+      setIsPairing(false);
+    }
+  };
+
 
   // --- Drag and Drop Handlers ---
   const handleDragStart = (e, item, type) => {
@@ -710,9 +798,7 @@ export default function App() {
   const forceAppReload = () => {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-                registration.unregister();
-            }
+            for(let registration of registrations) { registration.unregister(); }
         });
     }
     if ('caches' in window) {
@@ -720,9 +806,7 @@ export default function App() {
             for (let name of names) caches.delete(name);
         });
     }
-    setTimeout(() => {
-        window.location.reload(true);
-    }, 500);
+    setTimeout(() => { window.location.reload(true); }, 500);
   };
 
   // CRUD Helpers
@@ -739,7 +823,7 @@ export default function App() {
     setEditingTile(null);
   };
   const addPage = () => {
-    const newPage = { id: generateId(), label: "New Page", icon: "📄", color: "bg-gray-100", tiles: [] };
+    const newPage = { id: generateId(), label: "New Page", icon: "📄", color: "bg-gray-100", type: "local", tiles: [] };
     setConfig(p => ({ ...p, pages: [...p.pages, newPage] }));
     setActivePageId(newPage.id);
   };
@@ -763,6 +847,7 @@ export default function App() {
   const activePage = config.pages.find(p => p.id === activePageId) || config.pages[0];
   const displayedVoices = config.settings.offlineOnly ? availableVoices.filter(v => v.localService) : availableVoices;
   const showLabels = config.settings.showLabels !== false;
+  const isManagedPage = activePage?.type === 'managed';
   
   const isCustomRowLayout = (activePage?.id === 'p_keyboard' || activePage?.id === 'p_numbers') && (activePage?.tiles || []).some(t => t.row !== undefined);
 
@@ -776,7 +861,7 @@ export default function App() {
     return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
   };
 
-  // --- Proxy Data Exchanges (Unchanged) ---
+  // --- Proxy Data Exchanges ---
   const downloadJSON = (data, filename) => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
     const a = document.createElement('a');
@@ -881,7 +966,8 @@ export default function App() {
               onDrop={(e) => handlePageDrop(e, page)}
               className="relative"
             >
-              <button onClick={() => setActivePageId(page.id)} className={`flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 text-white shadow-md scale-105' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'} ${isEditMode ? 'cursor-grab' : ''}`}>
+              <button onClick={() => setActivePageId(page.id)} className={`relative flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 text-white shadow-md scale-105' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'} ${isEditMode ? 'cursor-grab' : ''}`}>
+                {page.type === 'managed' && <ShieldCheck size={14} className={`absolute top-1 left-1 ${activePageId === page.id ? 'text-blue-200' : 'text-blue-500'}`} />}
                 <span className="text-2xl mb-1">{page.icon}</span>
                 <span className="text-[10px] font-bold truncate max-w-full leading-tight">{page.label}</span>
               </button>
@@ -942,8 +1028,11 @@ export default function App() {
           <div className="flex items-center justify-between gap-2 overflow-hidden">
             <div className="flex items-center gap-3 shrink-0">
               <img src="/pwa-192x192.png" alt="Logo" className="md:hidden w-8 h-8 rounded-lg shadow-sm object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
-              <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">{activePage?.icon || ''} {activePage?.label || 'Page'}</h1>
-              {isEditMode && <button onClick={() => setEditingPage(activePage)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500"><Edit2 size={16} /></button>}
+              <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">
+                  {isManagedPage && <ShieldCheck size={28} className="text-blue-500" title="Managed by School" />}
+                  {activePage?.icon || ''} {activePage?.label || 'Page'}
+              </h1>
+              {isEditMode && !isManagedPage && <button onClick={() => setEditingPage(activePage)} className="p-2 bg-white/50 hover:bg-white rounded-full text-slate-500"><Edit2 size={16} /></button>}
             </div>
             
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
@@ -971,6 +1060,15 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* Read-Only Warning for Managed Pages */}
+        {isEditMode && isManagedPage && (
+          <div className="w-full text-center mb-6">
+            <span className="bg-blue-100 border border-blue-200 text-blue-800 px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 max-w-max mx-auto shadow-sm">
+               <ShieldCheck size={18} className="text-blue-600"/> School-Managed Page (Read-Only)
+            </span>
+          </div>
+        )}
 
         {/* Dynamic Grid / Row Layout Render */}
         {isCustomRowLayout ? (
@@ -1011,6 +1109,7 @@ export default function App() {
                             onDrop={(e, t) => handleTileDrop(e, t)}
                             onEdit={setEditingTile}
                             onDelete={deleteTile}
+                            isManagedPage={isManagedPage}
                          />
                        </div>
                      );
@@ -1018,7 +1117,7 @@ export default function App() {
                 </div>
               ));
             })()}
-            {isEditMode && (
+            {isEditMode && !isManagedPage && (
               <button onClick={addTile} className="mt-4 w-full max-w-sm h-20 rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
                 <Plus size={24} /> <span className="font-bold mt-1 text-sm">Add Custom Key</span>
               </button>
@@ -1040,9 +1139,10 @@ export default function App() {
                  onDrop={(e, t) => handleTileDrop(e, t)}
                  onEdit={setEditingTile}
                  onDelete={deleteTile}
+                 isManagedPage={isManagedPage}
               />
             ))}
-            {isEditMode && (
+            {isEditMode && !isManagedPage && (
               <button onClick={addTile} className="aspect-square rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
                 <Plus size={48} /> <span className="font-bold mt-2">Add</span>
               </button>
@@ -1301,6 +1401,57 @@ export default function App() {
             <button onClick={() => setShowSettings(false)} className="hover:text-gray-300"><X size={24} /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
+
+            {/* School Connection Status */}
+            <section>
+              <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><Globe size={16} /> School Connection</h3>
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
+                {linkedStudentId ? (
+                  <div>
+                    <div className="flex items-center gap-2 text-green-600 font-bold mb-1">
+                        <Check size={18}/> Linked to District
+                    </div>
+                    <p className="text-xs text-slate-500">This device receives managed pages directly from your school.</p>
+                    <button 
+                        onClick={() => {
+                            if (window.confirm("Disconnect from school? You will keep existing pages, but won't receive updates.")) {
+                                setLinkedStudentId(null);
+                                localStorage.removeItem('zip_student_id');
+                            }
+                        }} 
+                        className="mt-4 px-4 py-2 w-full bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-bold transition-colors"
+                    >
+                        Disconnect from School
+                    </button>
+                  </div>
+                ) : isPairing ? (
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-slate-800 mb-2">Show this code to your Teacher:</p>
+                    <div className="text-3xl font-mono tracking-widest font-black text-blue-600 mb-4 bg-white py-2 border rounded-lg">
+                        {appPairingCode}
+                    </div>
+                    {appPairingCode && (
+                        <div className="flex justify-center mb-4">
+                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${appPairingCode}`} alt="QR Code" className="rounded-lg shadow-sm border p-2 bg-white" />
+                        </div>
+                    )}
+                    <div className="flex items-center justify-center gap-2 text-slate-500 text-xs mb-4">
+                        <Loader2 className="animate-spin" size={14} /> Waiting for teacher...
+                    </div>
+                    <button onClick={() => { setIsPairing(false); setAppPairingCode(null); }} className="w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-bold transition-colors">Cancel</button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-slate-600 mb-4 leading-relaxed">Connect this device to your school district to receive master pages and updates automatically.</p>
+                    <button onClick={handleGeneratePairingCode} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-colors">
+                      <Link size={18} /> Link to School
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <hr className="border-slate-100" />
 
             {/* Visuals */}
             <section>
