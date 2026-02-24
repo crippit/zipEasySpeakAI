@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 import {
   Settings,
   Lock,
@@ -489,6 +489,31 @@ export default function App() {
     return () => unsub();
   }, [linkedStudentId]);
 
+  // --- Sync Local Changes UP to Firebase ---
+  useEffect(() => {
+    if (!linkedStudentId) return;
+
+    const timer = setTimeout(() => {
+        // Only send 'local' pages so we don't overwrite managed ones
+        const localPages = config.pages.filter(p => p.type !== 'managed');
+        
+        // Fetch current profile so we don't delete managed pages already on the server
+        const studentRef = doc(fbDb, 'students', linkedStudentId);
+        getDoc(studentRef).then(snap => {
+            if (snap.exists()) {
+                const existingManaged = (snap.data().pages || []).filter(p => p.type === 'managed');
+                // Push merged state
+                updateDoc(studentRef, {
+                    pages: [...existingManaged, ...localPages],
+                    lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                }).catch(e => console.error("Upload sync error", e));
+            }
+        });
+    }, 2000); // 2-second debounce so it doesn't spam the database while dragging tiles
+
+    return () => clearTimeout(timer);
+  }, [config.pages, linkedStudentId]);
+
 
   const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
   const [timeContext, setTimeContext] = useState(''); 
@@ -688,11 +713,25 @@ export default function App() {
     
     setAppPairingCode(code);
     
+    // --- Device Detection Helper ---
+    const getDeviceName = () => {
+        const ua = navigator.userAgent;
+        if (/iPad/i.test(ua)) return "iPad";
+        if (/iPhone/i.test(ua)) return "iPhone";
+        if (/Mac/i.test(ua)) return "MacBook / iMac";
+        if (/Android/i.test(ua)) return "Android Device";
+        if (/Windows/i.test(ua)) return "Windows PC";
+        if (/CrOS/i.test(ua)) return "Chromebook";
+        return "Linked Device";
+    };
+
     try {
       const codeRef = doc(fbDb, 'pairing_codes', code);
+      // Save code and device type to temp table
       await setDoc(codeRef, {
         deviceId,
         status: 'pending',
+        deviceName: getDeviceName(),
         createdAt: new Date().toISOString()
       });
 
