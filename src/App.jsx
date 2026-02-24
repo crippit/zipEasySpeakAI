@@ -397,6 +397,9 @@ export default function App() {
   const [isPairing, setIsPairing] = useState(false);
   const [appPairingCode, setAppPairingCode] = useState(null);
 
+  // Use a ref to prevent infinite sync loops between upward and downward syncs
+  const lastUploadedLocalPages = useRef('');
+
   // Authenticate Anonymously for Firebase Access
   useEffect(() => {
       signInAnonymously(fbAuth).catch(console.error);
@@ -439,12 +442,18 @@ export default function App() {
     return DEFAULT_CONFIG;
   });
 
-  // --- Firebase Sync Effect ---
-  // Listens to the Student's profile and merges down 'Managed Pages'
+  // --- Firebase Downward Sync Effect ---
   useEffect(() => {
     if (!linkedStudentId) return;
     
     const studentRef = doc(fbDb, 'students', linkedStudentId);
+
+    // Initial heartbeat (moved outside of onSnapshot to prevent infinite heartbeat loops)
+    updateDoc(studentRef, { 
+      status: 'online', 
+      lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+    }).catch(e => console.warn(e));
+
     const unsub = onSnapshot(studentRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -461,7 +470,10 @@ export default function App() {
         // Merge managed pages from Firebase
         setConfig(prev => {
           const localPages = prev.pages.filter(p => p.type !== 'managed');
-          const managedPages = data.pages || [];
+          
+          // CRITICAL FIX: Only extract 'managed' pages from the server payload. 
+          // Otherwise we duplicate local pages endlessly.
+          const managedPages = (data.pages || []).filter(p => p.type === 'managed');
           
           // Re-map keyboard links just in case
           managedPages.forEach(p => {
@@ -472,12 +484,6 @@ export default function App() {
 
           return { ...prev, pages: [...localPages, ...managedPages] };
         });
-
-        // Report heartbeat back to dashboard
-        updateDoc(studentRef, { 
-          status: 'online', 
-          lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-        }).catch(e => console.warn(e));
 
       } else {
         // Profile deleted entirely
@@ -493,11 +499,17 @@ export default function App() {
   useEffect(() => {
     if (!linkedStudentId) return;
 
+    // Filter local pages and serialize them to string for strict comparison
+    const localPages = config.pages.filter(p => p.type !== 'managed');
+    const serializedLocal = JSON.stringify(localPages);
+
+    // CRITICAL FIX: Do not trigger an upload unless the local state actually changed.
+    // This stops the infinite sync loop with the downward listener.
+    if (serializedLocal === lastUploadedLocalPages.current) {
+        return;
+    }
+
     const timer = setTimeout(() => {
-        // Only send 'local' pages so we don't overwrite managed ones
-        const localPages = config.pages.filter(p => p.type !== 'managed');
-        
-        // Fetch current profile so we don't delete managed pages already on the server
         const studentRef = doc(fbDb, 'students', linkedStudentId);
         getDoc(studentRef).then(snap => {
             if (snap.exists()) {
@@ -506,10 +518,13 @@ export default function App() {
                 updateDoc(studentRef, {
                     pages: [...existingManaged, ...localPages],
                     lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                }).then(() => {
+                    // Save successful upload payload to block duplicate uploads
+                    lastUploadedLocalPages.current = serializedLocal;
                 }).catch(e => console.error("Upload sync error", e));
             }
         });
-    }, 2000); // 2-second debounce so it doesn't spam the database while dragging tiles
+    }, 2000); // 2-second debounce
 
     return () => clearTimeout(timer);
   }, [config.pages, linkedStudentId]);
