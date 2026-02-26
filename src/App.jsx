@@ -58,16 +58,29 @@ import { NEXT_WORD_PREDICTIONS } from './services/ai';
  */
 
 // --- FIREBASE INITIALIZATION ---
-const _env = typeof import.meta !== 'undefined' ? import.meta.env : {};
-const firebaseConfig = {
-  apiKey: _env.VITE_FIREBASE_API_KEY,
-  authDomain: _env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: _env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: _env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: _env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: _env.VITE_FIREBASE_APP_ID
+const getFirebaseConfig = () => {
+  try {
+    return {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID
+    };
+  } catch (error) {
+    return {
+      apiKey: "preview-only",
+      authDomain: "preview-only",
+      projectId: "preview-only",
+      storageBucket: "preview-only",
+      messagingSenderId: "preview-only",
+      appId: "preview-only"
+    };
+  }
 };
 
+const firebaseConfig = getFirebaseConfig();
 const fbApp = initializeApp(firebaseConfig);
 const fbAuth = getAuth(fbApp);
 const fbDb = getFirestore(fbApp);
@@ -503,8 +516,8 @@ export default function App() {
         let upgradedPages = Array.isArray(parsed.pages) ? [...parsed.pages] : [...DEFAULT_CONFIG.pages];
         
         upgradedPages.forEach(p => {
-            if (!p.type) p.type = 'local'; // Default existing pages to local
-            if (p.hidden === undefined) p.hidden = false; // Add hidden property if missing
+            if (!p.type) p.type = 'local'; 
+            if (p.hidden === undefined) p.hidden = false; 
             (p.tiles || []).forEach(t => {
                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
                 if (!t.variants || t.variants.length === 0) {
