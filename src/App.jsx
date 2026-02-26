@@ -483,6 +483,7 @@ export default function App() {
   const [linkedStudentId, setLinkedStudentId] = useState(() => localStorage.getItem('zip_student_id') || null);
   const [isPairing, setIsPairing] = useState(false);
   const [appPairingCode, setAppPairingCode] = useState(null);
+  const [remoteLockTrigger, setRemoteLockTrigger] = useState(0);
 
   // Use a ref to prevent infinite sync loops between upward and downward syncs
   const lastUploadedLocalPages = useRef('');
@@ -566,10 +567,14 @@ export default function App() {
              });
           });
           
-          // --- NEW: Handle Remote Admin PIN Lockout ---
+          // --- Handle Remote Admin PIN Lockout ---
           let newSettings = prev.settings;
           if (data.adminPin !== undefined && data.adminPin !== prev.settings.adminPin) {
              newSettings = { ...prev.settings, adminPin: data.adminPin };
+             // If PIN was applied remotely, trigger the lockout
+             if (data.adminPin.length > 0) {
+                 setRemoteLockTrigger(Date.now());
+             }
           }
 
           return { ...prev, settings: newSettings, pages: [...localPages, ...managedPages] };
@@ -651,6 +656,15 @@ export default function App() {
 
   // Contexts
   const activePage = config.pages.find(p => p.id === activePageId) || config.pages[0];
+
+  // --- Force Lockout on Remote PIN Update ---
+  useEffect(() => {
+      if (remoteLockTrigger > 0) {
+          setIsEditMode(false);
+          setShowSettings(false);
+          setPinPrompt(false);
+      }
+  }, [remoteLockTrigger]);
 
   // --- Handle exiting Edit Mode on a Hidden Page ---
   useEffect(() => {
