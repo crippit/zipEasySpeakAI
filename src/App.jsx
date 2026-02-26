@@ -58,14 +58,14 @@ import { NEXT_WORD_PREDICTIONS } from './services/ai';
  */
 
 // --- FIREBASE INITIALIZATION ---
-// Using Environment Variables to keep keys out of public source control
+const _env = typeof import.meta !== 'undefined' ? import.meta.env : {};
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: _env.VITE_FIREBASE_API_KEY,
+  authDomain: _env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: _env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: _env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: _env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: _env.VITE_FIREBASE_APP_ID
 };
 
 const fbApp = initializeApp(firebaseConfig);
@@ -142,7 +142,7 @@ const LOCATIONS = [
   { id: 'conference', label: 'Conference', icon: '🎤' },
 ];
 
-// --- Default Configuration Data ---
+// --- EXPANDED Default Configuration Data ---
 const DEFAULT_CONFIG = {
   version: 3,
   settings: {
@@ -178,6 +178,11 @@ const DEFAULT_CONFIG = {
         { id: "c5", label: "Yes", phrase: "Yes", image: "👍", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
         { id: "c6", label: "No", phrase: "No", image: "👎", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
         { id: "c7", label: "Help", phrase: "Help", image: "🆘", type: "emoji", color: "bg-pink-200", linkToPage: "", isSilent: false, variants: ["help", "helping", "helped"] },
+        { id: "c8", label: "Like", phrase: "like", image: "❤️", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["like", "likes", "liking", "liked"] },
+        { id: "c9", label: "Don't", phrase: "don't", image: "🚫", type: "emoji", color: "bg-red-200", linkToPage: "", isSilent: false },
+        { id: "c10", label: "Good", phrase: "good", image: "😊", type: "emoji", color: "bg-blue-200", linkToPage: "", isSilent: false },
+        { id: "c11", label: "Bad", phrase: "bad", image: "☹️", type: "emoji", color: "bg-blue-200", linkToPage: "", isSilent: false },
+        { id: "c12", label: "It", phrase: "it", image: "📦", type: "emoji", color: "bg-yellow-200", linkToPage: "", isSilent: false },
         { id: "t_kb_link", label: "Type", phrase: "", image: "⌨️", type: "emoji", color: "bg-slate-200", linkToPage: "p_keyboard", isSilent: true },
       ]
     },
@@ -197,6 +202,11 @@ const DEFAULT_CONFIG = {
         { id: "a6", label: "Get", phrase: "get", image: "👐", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["get", "gets", "getting", "got"] },
         { id: "a7", label: "Open", phrase: "open", image: "🔓", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["open", "opens", "opening", "opened"] },
         { id: "a8", label: "Close", phrase: "close", image: "🔒", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["close", "closes", "closing", "closed"] },
+        { id: "a9", label: "Come", phrase: "come", image: "👋", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["come", "comes", "coming", "came"] },
+        { id: "a10", label: "Put", phrase: "put", image: "📥", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["put", "puts", "putting"] },
+        { id: "a11", label: "Give", phrase: "give", image: "🎁", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["give", "gives", "giving", "gave"] },
+        { id: "a12", label: "Wash", phrase: "wash", image: "🧼", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["wash", "washes", "washing", "washed"] },
+        { id: "a13", label: "Read", phrase: "read", image: "📖", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["read", "reads", "reading"] },
       ]
     },
     {
@@ -217,6 +227,11 @@ const DEFAULT_CONFIG = {
         { id: "f8", label: "Juice", phrase: "juice", image: "🧃", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
         { id: "f9", label: "Milk", phrase: "milk", image: "🥛", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
         { id: "f10", label: "Snack", phrase: "snack", image: "🥨", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["snack", "snacks"] },
+        { id: "f11", label: "Crackers", phrase: "crackers", image: "🍘", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f12", label: "Cheese", phrase: "cheese", image: "🧀", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f13", label: "Bread", phrase: "bread", image: "🍞", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f14", label: "Chicken", phrase: "chicken", image: "🍗", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f15", label: "Candy", phrase: "candy", image: "🍬", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
       ]
     },
     {
@@ -235,6 +250,10 @@ const DEFAULT_CONFIG = {
         { id: "pl6", label: "Car", phrase: "car", image: "🚗", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
         { id: "pl7", label: "Doctor", phrase: "doctor", image: "🩺", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
         { id: "pl8", label: "Outside", phrase: "outside", image: "🌳", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl9", label: "Bus", phrase: "bus", image: "🚌", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl10", label: "Room", phrase: "room", image: "🚪", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl11", label: "Bed", phrase: "bed", image: "🛏️", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl12", label: "Kitchen", phrase: "kitchen", image: "🍳", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
       ]
     },
     {
@@ -251,6 +270,10 @@ const DEFAULT_CONFIG = {
         { id: "r4", label: "Toilet", phrase: "toilet", image: "🚽", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false },
         { id: "r5", label: "Dress", phrase: "get dressed", image: "👕", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false, variants: ["get dressed", "getting dressed"] },
         { id: "r6", label: "Sleep", phrase: "sleep", image: "🛌", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false, variants: ["sleep", "sleeps", "sleeping", "slept"] },
+        { id: "r7", label: "Clean up", phrase: "clean up", image: "🧹", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false, variants: ["clean up", "cleaning up"] },
+        { id: "r8", label: "Homework", phrase: "homework", image: "📝", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false },
+        { id: "r9", label: "Backpack", phrase: "backpack", image: "🎒", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false },
+        { id: "r10", label: "Shoes on", phrase: "put shoes on", image: "👟", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false },
       ]
     },
     {
@@ -513,7 +536,7 @@ export default function App() {
     
     const studentRef = doc(fbDb, 'students', linkedStudentId);
 
-    // Initial heartbeat (moved outside of onSnapshot to prevent infinite heartbeat loops)
+    // Initial heartbeat
     updateDoc(studentRef, { 
       status: 'online', 
       lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
@@ -532,12 +555,8 @@ export default function App() {
            return;
         }
 
-        // Merge managed pages from Firebase
         setConfig(prev => {
           const localPages = prev.pages.filter(p => p.type !== 'managed');
-          
-          // CRITICAL FIX: Only extract 'managed' pages from the server payload. 
-          // Otherwise we duplicate local pages endlessly.
           const managedPages = (data.pages || []).filter(p => p.type === 'managed');
           
           // Re-map keyboard links just in case
@@ -546,8 +565,14 @@ export default function App() {
                  if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
              });
           });
+          
+          // --- NEW: Handle Remote Admin PIN Lockout ---
+          let newSettings = prev.settings;
+          if (data.adminPin !== undefined && data.adminPin !== prev.settings.adminPin) {
+             newSettings = { ...prev.settings, adminPin: data.adminPin };
+          }
 
-          return { ...prev, pages: [...localPages, ...managedPages] };
+          return { ...prev, settings: newSettings, pages: [...localPages, ...managedPages] };
         });
 
       } else {
@@ -627,7 +652,7 @@ export default function App() {
   // Contexts
   const activePage = config.pages.find(p => p.id === activePageId) || config.pages[0];
 
-  // --- NEW: Handle exiting Edit Mode on a Hidden Page ---
+  // --- Handle exiting Edit Mode on a Hidden Page ---
   useEffect(() => {
       // If we exit edit mode, and the current page is hidden, safely route to the first visible page
       if (!isEditMode && activePage?.hidden) {
@@ -638,15 +663,13 @@ export default function App() {
       }
   }, [isEditMode, activePage, config.pages, activePageId]);
 
-  // --- NEW: Global Tile Aggregation for Predictions ---
-  // Create a flat dictionary of every unique tile across all pages
+  // --- Global Tile Aggregation for Predictions ---
   const globalTiles = useMemo(() => {
       const all = [];
       const seen = new Set();
       config.pages.forEach(page => {
           (page.tiles || []).forEach(tile => {
               const text = tile.phrase.toLowerCase();
-              // Skip silent navigation tiles, purely structural keys, or duplicates
               if (!tile.isSilent && !tile.id.startsWith('k_') && !tile.id.startsWith('n_') && !seen.has(text)) {
                   seen.add(text);
                   all.push(tile);
@@ -665,12 +688,11 @@ export default function App() {
       
       if (predictedWords.length === 0) return [];
 
-      // Find global tiles that match the predicted words
       const matchingTiles = predictedWords.map(word => {
           return globalTiles.find(t => t.phrase.toLowerCase() === word) || null;
-      }).filter(Boolean); // Remove nulls if a predicted word isn't in their vocabulary yet
+      }).filter(Boolean); 
 
-      return matchingTiles.slice(0, 8); // Limit to top 8 suggestions
+      return matchingTiles.slice(0, 8); 
   }, [sentence, globalTiles]);
 
 
@@ -1558,7 +1580,7 @@ export default function App() {
                 </div>
               </div>
               
-              {/* NEW: Hide Page Toggle */}
+              {/* Hide Page Toggle */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-4">
                  <div>
                     <div className="font-bold text-sm text-slate-800">Hide Page</div>
@@ -1602,7 +1624,16 @@ export default function App() {
               <button onClick={() => { setPinPrompt(false); setPinContext(null); setPinInput(""); }} className="flex-1 py-2 rounded-lg bg-gray-200">Cancel</button>
               <button onClick={verifyPin} className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-bold">Unlock</button>
             </div>
-            <button onClick={handleFactoryReset} className="text-red-500 text-xs hover:underline">Forgot PIN? Factory Reset</button>
+            
+            {!linkedStudentId && (
+               <button onClick={handleFactoryReset} className="text-red-500 text-xs hover:underline mt-2">Forgot PIN? Factory Reset</button>
+            )}
+            {linkedStudentId && (
+               <p className="text-[10px] text-slate-400 mt-4 leading-tight bg-slate-50 p-2 rounded border border-slate-100">
+                  <ShieldCheck size={12} className="inline mr-1 text-slate-400" />
+                  Device is managed by a school. Local factory reset is disabled.
+               </p>
+            )}
           </div>
         </div>
       )}
@@ -1626,17 +1657,6 @@ export default function App() {
                         <Check size={18}/> Linked to District
                     </div>
                     <p className="text-xs text-slate-500">This device receives managed pages directly from your school.</p>
-                    <button 
-                        onClick={() => {
-                            if (window.confirm("Disconnect from school? You will keep existing pages, but won't receive updates.")) {
-                                setLinkedStudentId(null);
-                                localStorage.removeItem('zip_student_id');
-                            }
-                        }} 
-                        className="mt-4 px-4 py-2 w-full bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-bold transition-colors"
-                    >
-                        Disconnect from School
-                    </button>
                   </div>
                 ) : isPairing ? (
                   <div className="text-center">
@@ -1803,8 +1823,18 @@ export default function App() {
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><Lock size={16} /> Security</h3>
               <div className="bg-slate-50 p-4 rounded-lg">
-                <label className="block text-sm font-medium mb-1">Admin PIN</label>
-                <input type="text" value={config.settings.adminPin} onChange={e => updateSetting('adminPin', e.target.value)} placeholder="Leave empty for no PIN" className="w-full p-2 border rounded-md text-sm mb-2" />
+                <label className="block text-sm font-medium mb-1">Local Admin PIN</label>
+                <input 
+                   type="text" 
+                   value={config.settings.adminPin || ""} 
+                   onChange={e => updateSetting('adminPin', e.target.value)} 
+                   placeholder="Leave empty for no PIN" 
+                   className="w-full p-2 border rounded-md text-sm mb-2" 
+                   disabled={!!linkedStudentId}
+                />
+                {linkedStudentId && (
+                   <p className="text-[10px] text-amber-600 leading-tight">PIN is managed remotely by the school district.</p>
+                )}
               </div>
             </section>
 
