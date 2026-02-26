@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { getFirestore, doc, getDoc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
@@ -558,6 +558,42 @@ export default function App() {
 
   const fileInputRef = useRef(null);
   const mergeInputRef = useRef(null);
+
+  // --- NEW: Global Tile Aggregation for Predictions ---
+  // Create a flat dictionary of every unique tile across all pages
+  const globalTiles = useMemo(() => {
+      const all = [];
+      const seen = new Set();
+      config.pages.forEach(page => {
+          (page.tiles || []).forEach(tile => {
+              const text = tile.phrase.toLowerCase();
+              // Skip silent navigation tiles, purely structural keys, or duplicates
+              if (!tile.isSilent && !tile.id.startsWith('k_') && !tile.id.startsWith('n_') && !seen.has(text)) {
+                  seen.add(text);
+                  all.push(tile);
+              }
+          });
+      });
+      return all;
+  }, [config.pages]);
+
+  // Find which global tiles match the next word predictions
+  const predictedNextTiles = useMemo(() => {
+      if (sentence.length === 0) return [];
+      
+      const lastWord = sentence[sentence.length - 1].phrase.toLowerCase();
+      const predictedWords = NEXT_WORD_PREDICTIONS[lastWord] || [];
+      
+      if (predictedWords.length === 0) return [];
+
+      // Find global tiles that match the predicted words
+      const matchingTiles = predictedWords.map(word => {
+          return globalTiles.find(t => t.phrase.toLowerCase() === word) || null;
+      }).filter(Boolean); // Remove nulls if a predicted word isn't in their vocabulary yet
+
+      return matchingTiles.slice(0, 8); // Limit to top 8 suggestions
+  }, [sentence, globalTiles]);
+
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
@@ -1123,6 +1159,36 @@ export default function App() {
                <ShieldCheck size={18} className="text-blue-600"/> School-Managed Page (Read-Only)
             </span>
           </div>
+        )}
+
+        {/* --- NEW: Predictive Next Words Strip --- */}
+        {config.settings.enableSentenceBuilder && predictedNextTiles.length > 0 && !isCustomRowLayout && (
+            <div className="mb-6 animate-in slide-in-from-top-2 fade-in duration-300">
+               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5 ml-1">
+                   <Zap size={14} className="text-yellow-500" /> Suggested Next Words
+               </h3>
+               <div className="flex gap-3 overflow-x-auto pb-3 no-scrollbar items-start">
+                   {predictedNextTiles.map(tile => (
+                       <div key={`pred-${tile.id}`} className="w-[88px] sm:w-24 md:w-28 shrink-0">
+                           <Tile 
+                               tile={tile}
+                               onClick={handleTileClick}
+                               editMode={false} // Prevent editing from the prediction row
+                               isPredicted={false} // Don't apply the pulse ring here
+                               showLabels={showLabels}
+                               onLongPress={setActiveMorphology}
+                               onDragStart={() => {}}
+                               onDragOver={() => {}}
+                               onDrop={() => {}}
+                               onEdit={() => {}}
+                               onDelete={() => {}}
+                               isManagedPage={true} // Forces clean tap behavior
+                           />
+                       </div>
+                   ))}
+               </div>
+               <hr className="border-slate-200 mt-2" />
+            </div>
         )}
 
         {/* Dynamic Grid / Row Layout Render */}
