@@ -46,7 +46,8 @@ import {
   Layers,
   Globe,
   Link,
-  ShieldCheck
+  ShieldCheck,
+  EyeOff
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
@@ -168,14 +169,34 @@ const DEFAULT_CONFIG = {
       icon: "🏠",
       color: "bg-blue-100",
       type: "local",
+      hidden: false,
       tiles: [
-        { id: "t1", label: "I", phrase: "I", image: "🧍", type: "emoji", color: "bg-yellow-200", linkToPage: "", isSilent: false, variants: ["I", "me", "my", "mine"] },
-        { id: "t2", label: "Want", phrase: "want", image: "🤲", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["want", "wants", "wanted", "wanting"] },
-        { id: "t3", label: "Stop", phrase: "Stop it", image: "🛑", type: "emoji", color: "bg-pink-200", linkToPage: "", isSilent: false },
-        { id: "t4", label: "More", phrase: "more", image: "➕", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
-        { id: "t5", label: "Yes", phrase: "Yes", image: "👍", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
-        { id: "t6", label: "No", phrase: "No", image: "👎", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
+        { id: "c1", label: "I", phrase: "I", image: "🧍", type: "emoji", color: "bg-yellow-200", linkToPage: "", isSilent: false, variants: ["I", "me", "my", "mine"] },
+        { id: "c2", label: "Want", phrase: "want", image: "🤲", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["want", "wants", "wanted", "wanting"] },
+        { id: "c3", label: "Stop", phrase: "Stop it", image: "🛑", type: "emoji", color: "bg-pink-200", linkToPage: "", isSilent: false },
+        { id: "c4", label: "More", phrase: "more", image: "➕", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
+        { id: "c5", label: "Yes", phrase: "Yes", image: "👍", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
+        { id: "c6", label: "No", phrase: "No", image: "👎", type: "emoji", color: "bg-white", linkToPage: "", isSilent: false },
+        { id: "c7", label: "Help", phrase: "Help", image: "🆘", type: "emoji", color: "bg-pink-200", linkToPage: "", isSilent: false, variants: ["help", "helping", "helped"] },
         { id: "t_kb_link", label: "Type", phrase: "", image: "⌨️", type: "emoji", color: "bg-slate-200", linkToPage: "p_keyboard", isSilent: true },
+      ]
+    },
+    {
+      id: "p_actions",
+      label: "Actions",
+      icon: "🏃",
+      color: "bg-green-50",
+      type: "local",
+      hidden: false,
+      tiles: [
+        { id: "a1", label: "Go", phrase: "go", image: "🚶", type: "emoji", color: "bg-green-200", linkToPage: "p_places", isSilent: false, variants: ["go", "goes", "going", "went"] },
+        { id: "a2", label: "Play", phrase: "play", image: "🎮", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["play", "plays", "playing", "played"] },
+        { id: "a3", label: "Look", phrase: "look", image: "👀", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["look", "looks", "looking", "looked"] },
+        { id: "a4", label: "Listen", phrase: "listen", image: "👂", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["listen", "listens", "listening", "listened"] },
+        { id: "a5", label: "Make", phrase: "make", image: "🛠️", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["make", "makes", "making", "made"] },
+        { id: "a6", label: "Get", phrase: "get", image: "👐", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["get", "gets", "getting", "got"] },
+        { id: "a7", label: "Open", phrase: "open", image: "🔓", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["open", "opens", "opening", "opened"] },
+        { id: "a8", label: "Close", phrase: "close", image: "🔒", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["close", "closes", "closing", "closed"] },
       ]
     },
     {
@@ -184,11 +205,52 @@ const DEFAULT_CONFIG = {
       icon: "🍔",
       color: "bg-orange-50",
       type: "local",
+      hidden: false,
       tiles: [
-        { id: "f1", label: "Apple", phrase: "apple", image: "🍎", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["apple", "apples"] },
-        { id: "f2", label: "Banana", phrase: "banana", image: "🍌", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["banana", "bananas"] },
+        { id: "f1", label: "Eat", phrase: "eat", image: "🍽️", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["eat", "eats", "eating", "ate"] },
+        { id: "f2", label: "Drink", phrase: "drink", image: "🚰", type: "emoji", color: "bg-green-200", linkToPage: "", isSilent: false, variants: ["drink", "drinks", "drinking", "drank"] },
         { id: "f3", label: "Water", phrase: "water", image: "💧", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
-        { id: "f4", label: "Cookie", phrase: "cookie", image: "🍪", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["cookie", "cookies"] },
+        { id: "f4", label: "Apple", phrase: "apple", image: "🍎", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["apple", "apples"] },
+        { id: "f5", label: "Banana", phrase: "banana", image: "🍌", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["banana", "bananas"] },
+        { id: "f6", label: "Cookie", phrase: "cookie", image: "🍪", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["cookie", "cookies"] },
+        { id: "f7", label: "Pizza", phrase: "pizza", image: "🍕", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f8", label: "Juice", phrase: "juice", image: "🧃", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f9", label: "Milk", phrase: "milk", image: "🥛", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false },
+        { id: "f10", label: "Snack", phrase: "snack", image: "🥨", type: "emoji", color: "bg-orange-200", linkToPage: "", isSilent: false, variants: ["snack", "snacks"] },
+      ]
+    },
+    {
+      id: "p_places",
+      label: "Places",
+      icon: "🗺️",
+      color: "bg-purple-50",
+      type: "local",
+      hidden: false,
+      tiles: [
+        { id: "pl1", label: "Home", phrase: "home", image: "🏠", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl2", label: "School", phrase: "school", image: "🏫", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl3", label: "Park", phrase: "park", image: "🏞️", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl4", label: "Store", phrase: "store", image: "🛒", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl5", label: "Bathroom", phrase: "bathroom", image: "🚽", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl6", label: "Car", phrase: "car", image: "🚗", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl7", label: "Doctor", phrase: "doctor", image: "🩺", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+        { id: "pl8", label: "Outside", phrase: "outside", image: "🌳", type: "emoji", color: "bg-purple-200", linkToPage: "", isSilent: false },
+      ]
+    },
+    {
+      id: "p_routines",
+      label: "Tasks",
+      icon: "📅",
+      color: "bg-teal-50",
+      type: "local",
+      hidden: false,
+      tiles: [
+        { id: "r1", label: "Wash Hands", phrase: "wash hands", image: "🧼", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false, variants: ["wash hands", "washing hands", "washed hands"] },
+        { id: "r2", label: "Brush Teeth", phrase: "brush teeth", image: "🪥", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false, variants: ["brush teeth", "brushing teeth", "brushed teeth"] },
+        { id: "r3", label: "Bath", phrase: "bath", image: "🛁", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false },
+        { id: "r4", label: "Toilet", phrase: "toilet", image: "🚽", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false },
+        { id: "r5", label: "Dress", phrase: "get dressed", image: "👕", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false, variants: ["get dressed", "getting dressed"] },
+        { id: "r6", label: "Sleep", phrase: "sleep", image: "🛌", type: "emoji", color: "bg-teal-200", linkToPage: "", isSilent: false, variants: ["sleep", "sleeps", "sleeping", "slept"] },
       ]
     },
     {
@@ -197,6 +259,7 @@ const DEFAULT_CONFIG = {
       icon: "⌨️",
       color: "bg-slate-100",
       type: "local",
+      hidden: false,
       tiles: getKeyboardTiles("qwerty")
     },
     {
@@ -205,6 +268,7 @@ const DEFAULT_CONFIG = {
       icon: "1️⃣",
       color: "bg-slate-100",
       type: "local",
+      hidden: false,
       tiles: getNumbersTiles()
     }
   ]
@@ -416,6 +480,7 @@ export default function App() {
         
         upgradedPages.forEach(p => {
             if (!p.type) p.type = 'local'; // Default existing pages to local
+            if (p.hidden === undefined) p.hidden = false; // Add hidden property if missing
             (p.tiles || []).forEach(t => {
                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
                 if (!t.variants || t.variants.length === 0) {
@@ -558,6 +623,20 @@ export default function App() {
 
   const fileInputRef = useRef(null);
   const mergeInputRef = useRef(null);
+
+  // Contexts
+  const activePage = config.pages.find(p => p.id === activePageId) || config.pages[0];
+
+  // --- NEW: Handle exiting Edit Mode on a Hidden Page ---
+  useEffect(() => {
+      // If we exit edit mode, and the current page is hidden, safely route to the first visible page
+      if (!isEditMode && activePage?.hidden) {
+          const firstVisible = config.pages.find(p => !p.hidden);
+          if (firstVisible && firstVisible.id !== activePageId) {
+              setActivePageId(firstVisible.id);
+          }
+      }
+  }, [isEditMode, activePage, config.pages, activePageId]);
 
   // --- NEW: Global Tile Aggregation for Predictions ---
   // Create a flat dictionary of every unique tile across all pages
@@ -914,7 +993,7 @@ export default function App() {
     setEditingTile(null);
   };
   const addPage = () => {
-    const newPage = { id: generateId(), label: "New Page", icon: "📄", color: "bg-gray-100", type: "local", tiles: [] };
+    const newPage = { id: generateId(), label: "New Page", icon: "📄", color: "bg-gray-100", type: "local", hidden: false, tiles: [] };
     setConfig(p => ({ ...p, pages: [...p.pages, newPage] }));
     setActivePageId(newPage.id);
   };
@@ -934,8 +1013,6 @@ export default function App() {
     setDeleteConfirm(false);
   };
 
-  // Contexts
-  const activePage = config.pages.find(p => p.id === activePageId) || config.pages[0];
   const displayedVoices = config.settings.offlineOnly ? availableVoices.filter(v => v.localService) : availableVoices;
   const showLabels = config.settings.showLabels !== false;
   const isManagedPage = activePage?.type === 'managed';
@@ -1048,7 +1125,7 @@ export default function App() {
           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Zip</span>
         </div>
         <div className="p-2 md:p-4 flex md:flex-col items-center gap-2">
-          {config.pages.map(page => (
+          {config.pages.filter(page => isEditMode || !page.hidden).map(page => (
             <div
               key={page.id}
               draggable={isEditMode}
@@ -1057,12 +1134,13 @@ export default function App() {
               onDrop={(e) => handlePageDrop(e, page)}
               className="relative"
             >
-              <button onClick={() => setActivePageId(page.id)} className={`relative flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 text-white shadow-md scale-105' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'} ${isEditMode ? 'cursor-grab' : ''}`}>
+              <button onClick={() => setActivePageId(page.id)} className={`relative flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 text-white shadow-md scale-105' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'} ${isEditMode ? 'cursor-grab' : ''} ${page.hidden ? 'opacity-60 grayscale bg-slate-200' : ''}`}>
                 {page.type === 'managed' && <ShieldCheck size={14} className={`absolute top-1 left-1 ${activePageId === page.id ? 'text-blue-200' : 'text-blue-500'}`} />}
+                {page.hidden && <EyeOff size={14} className="absolute top-1 right-1 text-slate-400" />}
                 <span className="text-2xl mb-1">{page.icon}</span>
                 <span className="text-[10px] font-bold truncate max-w-full leading-tight">{page.label}</span>
               </button>
-              {isEditMode && (
+              {isEditMode && !page.hidden && (
                 <div className="absolute top-0 right-0 p-1 bg-white/80 rounded-full shadow-sm pointer-events-none">
                   <GripVertical size={12} className="text-slate-400" />
                 </div>
@@ -1479,7 +1557,22 @@ export default function App() {
                   </select>
                 </div>
               </div>
-              <div className="flex gap-2 pt-2">
+              
+              {/* NEW: Hide Page Toggle */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-4">
+                 <div>
+                    <div className="font-bold text-sm text-slate-800">Hide Page</div>
+                    <p className="text-xs text-slate-500">Hide from students in normal mode</p>
+                 </div>
+                 <input 
+                    type="checkbox" 
+                    checked={!!editingPage.hidden} 
+                    onChange={e => setEditingPage({ ...editingPage, hidden: e.target.checked })} 
+                    className="w-5 h-5 accent-blue-600" 
+                 />
+              </div>
+
+              <div className="flex gap-2 pt-4">
                 {deleteConfirm ? (
                   <div className="flex flex-1 gap-2">
                     <button onClick={() => deletePage(editingPage.id)} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl">Confirm</button>
