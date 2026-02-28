@@ -597,6 +597,9 @@ export default function App() {
         });
 
       } else {
+        // Ignore false-negatives from the offline cache during initialization
+        if (docSnap.metadata && docSnap.metadata.fromCache) return;
+
         // Profile deleted entirely
         setLinkedStudentId(null);
         localStorage.removeItem('zip_student_id');
