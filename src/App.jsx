@@ -500,6 +500,7 @@ export default function App() {
 
   // Use a ref to prevent infinite sync loops between upward and downward syncs
   const lastUploadedLocalPages = useRef('');
+  const lastUploadedPin = useRef();
 
   // Authenticate Anonymously for Firebase Access
   useEffect(() => {
@@ -582,10 +583,12 @@ export default function App() {
           
           // --- Handle Remote Admin PIN Lockout ---
           let newSettings = prev.settings;
-          if (data.adminPin !== undefined && data.adminPin !== prev.settings.adminPin) {
-             newSettings = { ...prev.settings, adminPin: data.adminPin };
+          const remotePin = data.adminPin !== undefined ? data.adminPin : (data.pin !== undefined ? data.pin : undefined);
+          
+          if (remotePin !== undefined && remotePin !== prev.settings.adminPin) {
+             newSettings = { ...prev.settings, adminPin: remotePin };
              // If PIN was applied remotely, trigger the lockout
-             if (data.adminPin.length > 0) {
+             if (remotePin.length > 0) {
                  setRemoteLockTrigger(Date.now());
              }
           }
@@ -636,6 +639,33 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [config.pages, linkedStudentId]);
+
+  // --- Sync App Settings UP to Firebase ---
+  useEffect(() => {
+    if (!linkedStudentId) return;
+
+    const currentPin = config.settings.adminPin || "";
+    
+    // CRITICAL FIX: Block infinite sync loop by not updating if the pin hasn't genuinely changed locally
+    if (currentPin === lastUploadedPin.current) {
+        return;
+    }
+
+    const timer = setTimeout(() => {
+        const studentRef = doc(fbDb, 'students', linkedStudentId);
+        
+        updateDoc(studentRef, {
+            adminPin: currentPin,
+            pin: currentPin, // Push to legacy field as well
+            lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+        }).then(() => {
+            // Save successful upload payload
+            lastUploadedPin.current = currentPin;
+        }).catch(e => console.error("Upload pin sync error", e));
+    }, 1500); // 1.5-second debounce
+
+    return () => clearTimeout(timer);
+  }, [config.settings.adminPin, linkedStudentId]);
 
 
   const [activePageId, setActivePageId] = useState(() => config.pages[0].id);
@@ -1119,12 +1149,29 @@ export default function App() {
     if (window.confirm("WARNING: Wiping all pages and settings! Are you sure?")) { setConfig(DEFAULT_CONFIG); setPinPrompt(false); setPinInput(""); setPinContext(null); }
   };
   const requestAccess = (context) => {
-    if (config.settings.adminPin) { setPinContext(context); setPinPrompt(true); } 
-    else { if (context === 'edit') setIsEditMode(true); if (context === 'settings') setShowSettings(true); }
+    // Treat empty string/spaces as no PIN, anything else requires a PIN
+    // Cast to String to handle numeric PINs arriving from Firebase
+    const adminPin = config.settings.adminPin !== undefined && config.settings.adminPin !== null ? String(config.settings.adminPin) : "";
+    if (adminPin.trim() !== '') { 
+       setPinContext(context); 
+       setPinPrompt(true); 
+    } else { 
+       if (context === 'edit') setIsEditMode(true); 
+       if (context === 'settings') setShowSettings(true); 
+    }
   };
   const verifyPin = () => {
-    if (pinInput === config.settings.adminPin) { setPinPrompt(false); setPinInput(""); if (pinContext === 'edit') setIsEditMode(true); if (pinContext === 'settings') setShowSettings(true); setPinContext(null); } 
-    else { alert("Incorrect PIN"); setPinInput(""); }
+    const adminPin = config.settings.adminPin !== undefined && config.settings.adminPin !== null ? String(config.settings.adminPin) : "";
+    if (pinInput === adminPin) { 
+       setPinPrompt(false); 
+       setPinInput(""); 
+       if (pinContext === 'edit') setIsEditMode(true); 
+       if (pinContext === 'settings') setShowSettings(true); 
+       setPinContext(null); 
+    } else { 
+       alert("Incorrect PIN"); 
+       setPinInput(""); 
+    }
   };
   const getProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
   const getImageProxyUrl = (url) => `/api/proxy?url=${encodeURIComponent(url)}`;
