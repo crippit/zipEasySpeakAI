@@ -468,10 +468,10 @@ const Tile = React.memo(({
       )}
       
       {hasVariants && !editMode && (
-         <div className="absolute bottom-1 right-1.5 flex gap-0.5 pointer-events-none opacity-40">
-           <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
-           <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
-           <div className="w-1.5 h-1.5 bg-black rounded-full pointer-events-none"></div>
+         <div className="absolute bottom-1.5 right-1.5 flex gap-1 pointer-events-none opacity-80">
+           <div className="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
+           <div className="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
+           <div className="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
          </div>
       )}
 
@@ -1515,10 +1515,10 @@ export default function App() {
       {/* Morphology / Variants Modal (Triggered by Long Press) */}
       {activeMorphology && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setActiveMorphology(null)}>
-             <div className="bg-slate-100 p-6 rounded-3xl shadow-2xl max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+             <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-3xl shadow-2xl max-w-2xl w-full" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-xl flex items-center gap-2"><Layers className="text-blue-600" /> Choose Word Form</h3>
-                    <button onClick={() => setActiveMorphology(null)} className="p-2 bg-slate-200 rounded-full text-slate-600 hover:bg-slate-300"><X size={20} /></button>
+                    <h3 className="font-bold text-xl flex items-center gap-2 dark:text-slate-100"><Layers className="text-blue-600 dark:text-blue-400" /> Choose Word Form</h3>
+                    <button onClick={() => setActiveMorphology(null)} className="p-2 bg-slate-200 dark:bg-slate-700 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"><X size={20} /></button>
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1527,9 +1527,9 @@ export default function App() {
                         <button 
                            key={idx}
                            onClick={() => handleVariantSelect(variant)}
-                           className={`aspect-square flex flex-col items-center justify-center rounded-2xl shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all text-xl md:text-3xl font-bold bg-white border-black/10`}
+                           className={`aspect-square flex flex-col items-center justify-center rounded-2xl shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all text-xl md:text-3xl font-bold bg-white dark:bg-slate-700 dark:text-white border-black/10 dark:border-black/30 hover:bg-slate-50 dark:hover:bg-slate-600`}
                         >
-                            <span className="text-4xl md:text-5xl mb-2 opacity-50">{activeMorphology.type === 'emoji' ? activeMorphology.image : '🖼️'}</span>
+                            <span className="text-4xl md:text-5xl mb-2 opacity-50 dark:opacity-80">{activeMorphology.type === 'emoji' ? activeMorphology.image : '🖼️'}</span>
                             {variant}
                         </button>
                     ))}
