@@ -89,7 +89,7 @@ const fbDb = getFirestore(fbApp);
 
 // --- Remote Dashboard Settings Mappers ---
 const mapDashboardTheme = (remoteTheme) => {
-    if (!remoteTheme) return null;
+    if (typeof remoteTheme !== 'string') return null;
     const t = remoteTheme.toLowerCase();
     if (t.includes('dark')) return 'dark';
     if (t.includes('light')) return 'light';
@@ -97,15 +97,15 @@ const mapDashboardTheme = (remoteTheme) => {
 };
 
 const mapDashboardLayout = (remoteLayout) => {
-    if (!remoteLayout) return null;
-    const l = remoteLayout.toLowerCase();
+    if (remoteLayout == null || typeof remoteLayout === 'object') return null;
+    const l = String(remoteLayout).toLowerCase();
     if (l.includes('list')) return 1;
     if (l.includes('large')) return 3;
     return 'auto'; // Default grid
 };
 
 const mapDashboardVoice = (remoteName, availableVoices) => {
-    if (!remoteName || !availableVoices.length) return null;
+    if (typeof remoteName !== 'string' || !availableVoices.length) return null;
     const q = remoteName.toLowerCase();
     
     // Exact match first
@@ -669,21 +669,22 @@ export default function App() {
           }
           
           // --- Handle Remote Dashboard Settings (Theme, Voice, Layout, AI Context) ---
-          if (data.settings && typeof data.settings === 'object') {
+          if (data.settings && typeof data.settings === 'object' && !Array.isArray(data.settings)) {
               // 1. Theme
-              if (data.settings.theme) {
-                  newSettings.theme = mapDashboardTheme(data.settings.theme);
+              if (typeof data.settings.theme === 'string') {
+                  newSettings.theme = mapDashboardTheme(data.settings.theme) || newSettings.theme;
               }
               // 2. Layout (gridSize)
-              if (data.settings.layout) {
-                  newSettings.gridSize = mapDashboardLayout(data.settings.layout);
+              if (data.settings.layout !== undefined && typeof data.settings.layout !== 'object') {
+                  const mappedLayout = mapDashboardLayout(data.settings.layout);
+                  if (mappedLayout !== null) newSettings.gridSize = mappedLayout;
               }
               // 3. Voice (store raw name, synthesize later since voices load async)
-              if (data.settings.voice) {
+              if (typeof data.settings.voice === 'string') {
                   newSettings.remoteVoiceName = data.settings.voice;
               }
               // 4. AI Context (store to merge with local later)
-              if (data.settings.aiContext !== undefined) {
+              if (typeof data.settings.aiContext === 'string') {
                   newSettings.remoteAiContext = data.settings.aiContext;
               }
           }
