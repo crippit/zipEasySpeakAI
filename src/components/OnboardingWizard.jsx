@@ -11,14 +11,18 @@ import {
     Globe,
     Moon,
     Sun,
-    Monitor
+    Monitor,
+    Loader2
 } from 'lucide-react';
 
 export default function OnboardingWizard({ 
     onComplete, 
     onPairRequest, 
     currentConfig, 
-    onUpdateConfig 
+    onUpdateConfig,
+    isPairing,
+    appPairingCode,
+    onCancelPairing
 }) {
     const [step, setStep] = useState(1);
     const [availableVoices, setAvailableVoices] = useState([]);
@@ -82,35 +86,63 @@ export default function OnboardingWizard({
                     {/* STEP 1: WELCOME & CONNECT */}
                     {step === 1 && (
                         <div className="space-y-6 animate-in slide-in-from-right direction-normal fade-in duration-300 relative z-10">
-                            <div className="text-center space-y-4 mb-8">
-                                <div className="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full text-blue-600 mb-2">
-                                    <Sparkles size={40} />
-                                </div>
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">How do you want to set up?</h2>
-                                <p className="text-slate-500 dark:text-slate-400">You can inherit a profile managed by a teacher/parent, or set up entirely offline.</p>
-                            </div>
+                            
+                            {isPairing ? (
+                                <div className="text-center animate-in zoom-in-95 fade-in duration-300">
+                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Show this code to your Teacher:</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 flex items-center justify-center gap-2">
+                                        <Loader2 className="animate-spin text-blue-500" size={16} /> Waiting for dashboard connection...
+                                    </p>
+                                    
+                                    <div className="text-4xl sm:text-5xl font-mono tracking-widest font-black text-blue-600 dark:text-blue-400 mb-6 bg-slate-50 dark:bg-slate-900 py-4 border-2 border-slate-200 dark:border-slate-700 rounded-xl inline-block px-8 shadow-inner">
+                                        {appPairingCode}
+                                    </div>
 
-                            <button onClick={onPairRequest} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
-                                <div className="p-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                    <Link size={24} />
-                                </div>
-                                <div className="text-left flex-1">
-                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Pair with Dashboard</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">I have a sync code from my Teacher or SLP</p>
-                                </div>
-                                <ArrowRight className="text-indigo-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
-                            </button>
+                                    {appPairingCode && (
+                                        <div className="flex justify-center mb-8">
+                                            <div className="p-4 bg-white rounded-2xl shadow-sm border-2 border-slate-100">
+                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${appPairingCode}`} alt="QR Code" className="w-48 h-48 mix-blend-multiply" />
+                                            </div>
+                                        </div>
+                                    )}
 
-                            <button onClick={() => setStep(2)} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors group">
-                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                    <Settings size={24} />
+                                    <button onClick={onCancelPairing} className="px-8 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition-colors">
+                                        Cancel Pairing
+                                    </button>
                                 </div>
-                                <div className="text-left flex-1">
-                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Setup Locally</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">I want to customize everything on this device</p>
-                                </div>
-                                <ArrowRight className="text-emerald-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
-                            </button>
+                            ) : (
+                                <>
+                                    <div className="text-center space-y-4 mb-8">
+                                        <div className="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full text-blue-600 mb-2">
+                                            <Sparkles size={40} />
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">How do you want to set up?</h2>
+                                        <p className="text-slate-500 dark:text-slate-400">You can inherit a profile managed by a teacher/parent, or set up entirely offline.</p>
+                                    </div>
+
+                                    <button onClick={onPairRequest} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
+                                        <div className="p-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                            <Link size={24} />
+                                        </div>
+                                        <div className="text-left flex-1">
+                                            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Pair with Dashboard</h3>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">I have a sync code from my Teacher or SLP</p>
+                                        </div>
+                                        <ArrowRight className="text-indigo-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                                    </button>
+
+                                    <button onClick={() => setStep(2)} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors group">
+                                        <div className="p-3 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                            <Settings size={24} />
+                                        </div>
+                                        <div className="text-left flex-1">
+                                            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Setup Locally</h3>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">I want to customize everything on this device</p>
+                                        </div>
+                                        <ArrowRight className="text-emerald-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
 

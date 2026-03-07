@@ -1253,11 +1253,12 @@ export default function App() {
              <OnboardingWizard 
                  currentConfig={config}
                  onUpdateConfig={(updates) => setConfig(prev => ({ ...prev, settings: { ...prev.settings, ...updates } }))}
-                 onPairRequest={() => { 
-                    setShowSettings(true); 
-                    setIsPairing(true);
-                    handleGeneratePairingCode();
-                    setConfig(prev => ({ ...prev, settings: { ...prev.settings, onboardingComplete: true } })); 
+                 isPairing={isPairing}
+                 appPairingCode={appPairingCode}
+                 onPairRequest={handleGeneratePairingCode}
+                 onCancelPairing={() => {
+                     setIsPairing(false);
+                     setAppPairingCode(null);
                  }}
                  onComplete={() => console.log('Onboarding complete')}
              />
@@ -1463,7 +1464,7 @@ export default function App() {
               ));
             })()}
             {isEditMode && !isManagedPage && (
-              <button onClick={addTile} className="mt-4 w-full max-w-sm h-20 rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
+              <button onClick={addTile} className="mt-4 w-full max-w-sm h-20 rounded-2xl border-4 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                 <Plus size={24} /> <span className="font-bold mt-1 text-sm">Add Custom Key</span>
               </button>
             )}
@@ -1488,7 +1489,7 @@ export default function App() {
               />
             ))}
             {isEditMode && !isManagedPage && (
-              <button onClick={addTile} className="aspect-square rounded-2xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all">
+              <button onClick={addTile} className="aspect-square rounded-2xl border-4 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                 <Plus size={48} /> <span className="font-bold mt-2">Add</span>
               </button>
             )}
@@ -1753,8 +1754,8 @@ export default function App() {
                <button onClick={handleFactoryReset} className="text-red-500 text-xs hover:underline mt-2">Forgot PIN? Factory Reset</button>
             )}
             {linkedStudentId && (
-               <p className="text-[10px] text-slate-400 mt-4 leading-tight bg-slate-50 p-2 rounded border border-slate-100">
-                  <ShieldCheck size={12} className="inline mr-1 text-slate-400" />
+               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-4 leading-tight bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
+                  <ShieldCheck size={12} className="inline mr-1 text-slate-400 dark:text-slate-500" />
                   Device is managed by a school. Local factory reset is disabled.
                </p>
             )}
@@ -1967,14 +1968,14 @@ export default function App() {
 
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><Lock size={16} /> Security</h3>
-              <div className="bg-slate-50 p-4 rounded-lg">
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-transparent dark:border-slate-700">
                 <label className="block text-sm font-medium mb-1">Local Admin PIN</label>
                 <input 
                    type="text" 
                    value={config.settings.adminPin || ""} 
                    onChange={e => updateSetting('adminPin', e.target.value)} 
                    placeholder="Leave empty for no PIN" 
-                   className="w-full p-2 border rounded-md text-sm mb-2" 
+                   className="w-full p-2 border dark:border-slate-700 rounded-md text-sm mb-2 dark:bg-slate-900 dark:text-slate-200" 
                    disabled={!!linkedStudentId}
                 />
                 {linkedStudentId && (
@@ -1991,10 +1992,10 @@ export default function App() {
                 {showAdvancedSettings ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {showAdvancedSettings && (
-                <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg space-y-2 border border-transparent dark:border-slate-700">
                   <div>
                     <label className="block text-sm font-medium mb-1">Shared Secret</label>
-                    <input type="password" value={config.settings.openSymbolsSecret} onChange={e => updateSetting('openSymbolsSecret', e.target.value)} placeholder="Secret" className="w-full p-2 border rounded-md text-sm" />
+                    <input type="password" value={config.settings.openSymbolsSecret} onChange={e => updateSetting('openSymbolsSecret', e.target.value)} placeholder="Secret" className="w-full p-2 border dark:border-slate-700 rounded-md text-sm dark:bg-slate-900 dark:text-slate-200" />
                   </div>
                   <p className="text-xs text-slate-500">Required for symbol search API.</p>
                 </div>
@@ -2006,25 +2007,25 @@ export default function App() {
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><Save size={16} /> Data & Storage</h3>
               <div className="grid grid-cols-2 gap-3">
-                <button onClick={handleExport} className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                  <Download size={24} className="mb-2 text-blue-600" /> <span className="text-sm font-medium">Backup Full</span>
+                <button onClick={handleExport} className="flex flex-col items-center justify-center p-4 border dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <Download size={24} className="mb-2 text-blue-600 dark:text-blue-400" /> <span className="text-sm font-medium">Backup Full</span>
                   <span className="text-xs text-slate-400">Save everything</span>
                 </button>
-                <button onClick={() => handleExportPage(activePage)} className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                  <Share size={24} className="mb-2 text-indigo-600" /> <span className="text-sm font-medium">Export Page</span>
+                <button onClick={() => handleExportPage(activePage)} className="flex flex-col items-center justify-center p-4 border dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <Share size={24} className="mb-2 text-indigo-600 dark:text-indigo-400" /> <span className="text-sm font-medium">Export Page</span>
                   <span className="text-xs text-slate-400">Save current page</span>
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3 mt-3">
-                <label className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                  <Upload size={24} className="mb-2 text-green-600" /> <span className="text-sm font-medium">Restore</span>
+                <label className="flex flex-col items-center justify-center p-4 border dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                  <Upload size={24} className="mb-2 text-green-600 dark:text-green-400" /> <span className="text-sm font-medium">Restore</span>
                   <span className="text-xs text-slate-400">Replace all</span>
                   <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
                 </label>
 
-                <label className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                  <FilePlus size={24} className="mb-2 text-purple-600" />
+                <label className="flex flex-col items-center justify-center p-4 border dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                  <FilePlus size={24} className="mb-2 text-purple-600 dark:text-purple-400" />
                   <span className="text-sm font-medium">Import Page</span>
                   <span className="text-xs text-slate-400">Add to board</span>
                   <input type="file" ref={mergeInputRef} onChange={handleMergeImport} accept=".json" className="hidden" />
@@ -2039,7 +2040,7 @@ export default function App() {
             </button>
 
           </div>
-          <div className="p-4 bg-slate-50 border-t text-center text-xs text-slate-400">Zip EasySpeak v1.1 by <span className="font-bold">Zip Solutions</span></div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.1 by <span className="font-bold">Zip Solutions</span></div>
         </div>
       )}
     </div>
