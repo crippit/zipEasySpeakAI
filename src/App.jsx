@@ -170,6 +170,7 @@ const DEFAULT_CONFIG = {
     offlineOnly: false,
     onboardingComplete: false,
     aiContext: "",
+    theme: "system",
     enableSentenceBuilder: true,
     enableTimeContext: true,
     speakOnSelect: false,
@@ -791,6 +792,31 @@ export default function App() {
     }
   }, []);
 
+  // --- Theme Effect ---
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const theme = config.settings.theme || 'system';
+
+    const applyTheme = (isDark) => {
+      if (isDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    };
+
+    if (theme === 'system') {
+      const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      applyTheme(systemQuery.matches);
+      
+      const handleChange = (e) => applyTheme(e.matches);
+      systemQuery.addEventListener('change', handleChange);
+      return () => systemQuery.removeEventListener('change', handleChange);
+    } else {
+      applyTheme(theme === 'dark');
+    }
+  }, [config.settings.theme]);
+
   // --- Actions ---
   const speak = (text) => {
     if (!text) return;
@@ -1220,7 +1246,7 @@ export default function App() {
   const isTypingPage = activePageId === 'p_keyboard' || activePageId === 'p_numbers';
 
   return (
-    <div className={`min-h-screen ${isTypingPage ? 'bg-slate-100' : activePage.color || 'bg-slate-50'} font-sans text-slate-800 flex flex-col md:flex-row overflow-hidden`}>
+    <div className={`min-h-screen ${isTypingPage ? 'bg-slate-100 dark:bg-slate-900' : (activePage.color + ' dark:bg-slate-900') || 'bg-slate-50 dark:bg-slate-900'} font-sans text-slate-800 dark:text-slate-100 flex flex-col md:flex-row overflow-hidden`}>
 
       {!config.settings.onboardingComplete && (
           <div className="absolute inset-0 z-[100] bg-white text-slate-900">
@@ -1234,7 +1260,7 @@ export default function App() {
       )}
 
       {/* Sidebar */}
-      <nav className="w-full md:w-24 md:h-screen bg-white shadow-xl flex md:flex-col overflow-x-auto md:overflow-y-auto md:overflow-x-hidden shrink-0 z-20">
+      <nav className="w-full md:w-24 md:h-screen bg-white dark:bg-slate-800 shadow-xl flex md:flex-col overflow-x-auto md:overflow-y-auto md:overflow-x-hidden shrink-0 z-20 transition-colors">
         <div className="hidden md:flex flex-col items-center justify-center py-4 border-b border-slate-100 mb-2">
           <img src="/pwa-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-sm mb-1 object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Zip</span>
@@ -1249,7 +1275,7 @@ export default function App() {
               onDrop={(e) => handlePageDrop(e, page)}
               className="relative"
             >
-              <button onClick={() => setActivePageId(page.id)} className={`relative flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 text-white shadow-md scale-105' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'} ${isEditMode ? 'cursor-grab' : ''} ${page.hidden ? 'opacity-60 grayscale bg-slate-200' : ''}`}>
+              <button onClick={() => setActivePageId(page.id)} className={`relative flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300'} ${isEditMode ? 'cursor-grab' : ''} ${page.hidden ? 'opacity-60 grayscale bg-slate-200 dark:bg-slate-800' : ''}`}>
                 {page.type === 'managed' && <ShieldCheck size={14} className={`absolute top-1 left-1 ${activePageId === page.id ? 'text-blue-200' : 'text-blue-500'}`} />}
                 {page.hidden && <EyeOff size={14} className="absolute top-1 right-1 text-slate-400" />}
                 <span className="text-2xl mb-1">{page.icon}</span>
@@ -1276,27 +1302,27 @@ export default function App() {
         </div>
       </nav>
 
-      <main className={`flex-1 h-[calc(100vh-80px)] md:h-screen overflow-y-auto p-4 md:p-8 transition-colors ${activePage?.color || 'bg-slate-100'}`}>
+      <main className={`flex-1 h-[calc(100vh-80px)] md:h-screen overflow-y-auto p-4 md:p-8 transition-colors ${activePage?.color || 'bg-slate-100'} dark:bg-slate-900`}>
 
         {/* --- Top Bar: Header or Sentence Strip --- */}
         <div className="mb-6 space-y-4">
 
           {/* Sentence Strip (Visible if Enabled) */}
           {config.settings.enableSentenceBuilder && (
-            <div className="bg-white rounded-2xl shadow-lg p-2 min-h-[80px] flex items-center gap-2 border-2 border-blue-100">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-2 min-h-[80px] flex items-center gap-2 border-2 border-blue-100 dark:border-slate-700 transition-colors">
               <div className="flex-1 flex gap-2 overflow-x-auto p-2">
                 {sentence.length === 0 ? (
                   <span className="text-slate-300 italic pl-2 self-center">Build a sentence...</span>
                 ) : (
                   sentence.map((t, idx) => (
-                    <div key={idx} className="flex flex-col items-center justify-center bg-slate-100 border border-slate-200 rounded-lg p-2 min-w-[60px] h-[60px]">
+                    <div key={idx} className="flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-2 min-w-[60px] h-[60px] transition-colors">
                       <span className="text-xl leading-none mb-1">{t.type === 'emoji' ? t.image : '🖼️'}</span>
                       <span className="text-[10px] font-bold truncate max-w-[60px]">{t.label}</span>
                     </div>
                   ))
                 )}
               </div>
-              <div className="flex gap-1 border-l pl-2 border-slate-100">
+              <div className="flex gap-1 border-l pl-2 border-slate-100 dark:border-slate-700">
                 <button onClick={removeLastWord} className="p-3 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl" title="Backspace"><Delete size={24} /></button>
                 <button onClick={playSentence} className="p-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 hover:scale-105 transition-all" title="Play"><Play size={24} fill="currentColor" /></button>
               </div>
@@ -1784,6 +1810,14 @@ export default function App() {
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><LayoutGrid size={16} /> Visuals</h3>
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Color Theme</label>
+                  <select value={config.settings.theme || "system"} onChange={e => updateSetting('theme', e.target.value)} className="w-full p-2 border rounded-md text-sm mb-3">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">Use Device Theme</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Grid Size</label>
                   <select value={config.settings.gridSize || "auto"} onChange={e => updateSetting('gridSize', e.target.value === "auto" ? "auto" : parseInt(e.target.value))} className="w-full p-2 border rounded-md text-sm">

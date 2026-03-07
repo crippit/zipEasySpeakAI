@@ -8,7 +8,10 @@ import {
     BrainCircuit, 
     CheckCircle2, 
     LayoutGrid, 
-    Globe
+    Globe,
+    Moon,
+    Sun,
+    Monitor
 } from 'lucide-react';
 
 export default function OnboardingWizard({ 
@@ -24,7 +27,8 @@ export default function OnboardingWizard({
     const [wizardState, setWizardState] = useState({
         voiceURI: currentConfig.settings.voiceURI || null,
         gridSize: currentConfig.settings.gridSize || "auto",
-        aiContext: currentConfig.settings.aiContext || ""
+        aiContext: currentConfig.settings.aiContext || "",
+        theme: currentConfig.settings.theme || "system"
     });
 
     useEffect(() => {
@@ -52,6 +56,7 @@ export default function OnboardingWizard({
             voiceURI: wizardState.voiceURI,
             gridSize: wizardState.gridSize,
             aiContext: wizardState.aiContext,
+            theme: wizardState.theme,
             onboardingComplete: true
         });
         onComplete();
@@ -67,7 +72,7 @@ export default function OnboardingWizard({
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
                     <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
                     
-                    <h1 className="text-3xl font-extrabold mb-2 relative z-10">Welcome to Zip</h1>
+                    <h1 className="text-3xl font-extrabold mb-2 relative z-10">Welcome to Zip EasySpeak</h1>
                     <p className="text-blue-100 font-medium relative z-10">Let's set up your communication exactly how you need it.</p>
                 </div>
 
@@ -153,6 +158,25 @@ export default function OnboardingWizard({
                                             >
                                                 <span>{size === 'auto' ? 'Auto-Fit' : `${size} Columns`}</span>
                                                 {size !== 'auto' && <LayoutGrid size={16} className="opacity-50" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Color Theme</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[
+                                            { id: 'light', label: 'Light', icon: Sun },
+                                            { id: 'dark', label: 'Dark', icon: Moon },
+                                            { id: 'system', label: 'Device', icon: Monitor }
+                                        ].map(themeOption => (
+                                            <button 
+                                                key={themeOption.id}
+                                                onClick={() => setWizardState(p => ({...p, theme: themeOption.id}))}
+                                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 font-bold ${wizardState.theme === themeOption.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                            >
+                                                <themeOption.icon size={20} className={wizardState.theme === themeOption.id ? 'text-blue-500' : 'text-slate-400'} />
+                                                <span className="text-xs">{themeOption.label}</span>
                                             </button>
                                         ))}
                                     </div>
