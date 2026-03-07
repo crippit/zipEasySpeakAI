@@ -47,8 +47,30 @@ export default function OnboardingWizard({
 
     const testVoice = () => {
         const utterance = new SpeechSynthesisUtterance("Hello, I am ready to speak");
-        if (wizardState.voiceURI) {
-            const selectedVoice = availableVoices.find(v => v.voiceURI === wizardState.voiceURI);
+        
+        // Remote Teacher Voice takes precedence if synced during Step 1
+        let targetUri = wizardState.voiceURI;
+        if (currentConfig?.settings?.remoteVoiceName) {
+            const mappedName = currentConfig.settings.remoteVoiceName.toLowerCase();
+            const exact = availableVoices.find(v => v.name.toLowerCase() === mappedName);
+            if (exact) targetUri = exact.voiceURI;
+            else {
+                // Fuzzy fallback inside wizard
+                const isFemale = mappedName.includes('female') || mappedName.includes('girl');
+                const isMale = mappedName.includes('male') || mappedName.includes('boy');
+                const candidates = availableVoices.filter(v => v.lang.startsWith('en-'));
+                if (isFemale) {
+                    const f = candidates.find(v => v.name.includes('Samantha') || v.name.includes('Zira'));
+                    if (f) targetUri = f.voiceURI;
+                } else if (isMale) {
+                    const m = candidates.find(v => v.name.includes('Daniel') || v.name.includes('David'));
+                    if (m) targetUri = m.voiceURI;
+                }
+            }
+        }
+
+        if (targetUri) {
+            const selectedVoice = availableVoices.find(v => v.voiceURI === targetUri);
             if (selectedVoice) utterance.voice = selectedVoice;
         }
         window.speechSynthesis.speak(utterance);
@@ -120,7 +142,7 @@ export default function OnboardingWizard({
                                         <p className="text-slate-500 dark:text-slate-400">You can inherit a profile managed by a teacher/parent, or set up entirely offline.</p>
                                     </div>
 
-                                    <button onClick={onPairRequest} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
+                                    <button onClick={() => onPairRequest(() => setStep(2))} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
                                         <div className="p-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                             <Link size={24} />
                                         </div>

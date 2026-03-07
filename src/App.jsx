@@ -87,6 +87,51 @@ const fbApp = initializeApp(firebaseConfig);
 const fbAuth = getAuth(fbApp);
 const fbDb = getFirestore(fbApp);
 
+// --- Remote Dashboard Settings Mappers ---
+const mapDashboardTheme = (remoteTheme) => {
+    if (!remoteTheme) return null;
+    const t = remoteTheme.toLowerCase();
+    if (t.includes('dark')) return 'dark';
+    if (t.includes('light')) return 'light';
+    return 'system';
+};
+
+const mapDashboardLayout = (remoteLayout) => {
+    if (!remoteLayout) return null;
+    const l = remoteLayout.toLowerCase();
+    if (l.includes('list')) return 1;
+    if (l.includes('large')) return 3;
+    return 'auto'; // Default grid
+};
+
+const mapDashboardVoice = (remoteName, availableVoices) => {
+    if (!remoteName || !availableVoices.length) return null;
+    const q = remoteName.toLowerCase();
+    
+    // Exact match first
+    const exact = availableVoices.find(v => v.name.toLowerCase() === q);
+    if (exact) return exact.voiceURI;
+    
+    // Fuzzy search based on keywords
+    const isFemale = q.includes('female') || q.includes('girl') || q.includes('woman');
+    const isMale = q.includes('male') || q.includes('boy') || q.includes('man');
+    
+    let candidates = availableVoices.filter(v => v.lang.startsWith('en-'));
+    if (candidates.length === 0) candidates = availableVoices; // Fallback
+    
+    if (isFemale) {
+        // Look for known female identifiers
+        const f = candidates.find(v => v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Victoria') || v.name.includes('Google US English') || v.name.includes('Karen'));
+        if (f) return f.voiceURI;
+    } else if (isMale) {
+        // Look for known male identifiers
+        const m = candidates.find(v => v.name.includes('Daniel') || v.name.includes('David') || v.name.includes('Mark') || v.name.includes('Alex') || v.name.includes('Fred'));
+        if (m) return m.voiceURI;
+    }
+    
+    // Absolute fallback
+    return candidates[0]?.voiceURI || null;
+};
 
 // --- Keyboard Generators ---
 const getKeyboardTiles = (type) => {
@@ -552,7 +597,22 @@ export default function App() {
 
         upgradedPages = upgradedPages.filter(p => p.id !== 'p_qwerty_full');
 
-        return { ...DEFAULT_CONFIG, ...parsed, version: APP_VERSION, settings: { ...DEFAULT_CONFIG.settings, ...(parsed.settings || {}) }, pages: upgradedPages };
+        // Detect if this is an existing user upgrading from before Onboarding was introduced, or if they are already paired
+        const isUpgradingFromBeforeOnboarding = (parsed.version || 1) < 4;
+        const hasLinkedId = !!localStorage.getItem('zip_student_id');
+        const finalOnboardingState = isUpgradingFromBeforeOnboarding || hasLinkedId ? true : (parsed.settings?.onboardingComplete || false);
+
+        return { 
+          ...DEFAULT_CONFIG, 
+          ...parsed, 
+          version: APP_VERSION, 
+          settings: { 
+            ...DEFAULT_CONFIG.settings, 
+            ...(parsed.settings || {}),
+            onboardingComplete: finalOnboardingState
+          }, 
+          pages: upgradedPages 
+        };
       }
     } catch (e) {
       console.error("Failed to load config", e);
@@ -567,10 +627,10 @@ export default function App() {
     const studentRef = doc(fbDb, 'students', linkedStudentId);
 
     // Initial heartbeat
-    updateDoc(studentRef, { 
+    setDoc(studentRef, { 
       status: 'online', 
       lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-    }).catch(e => console.warn(e));
+    }, { merge: true }).catch(e => console.warn(e));
 
     const unsub = onSnapshot(studentRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -601,11 +661,31 @@ export default function App() {
           const remotePin = data.adminPin !== undefined ? data.adminPin : (data.pin !== undefined ? data.pin : undefined);
           
           if (remotePin !== undefined && remotePin !== prev.settings.adminPin) {
-             newSettings = { ...prev.settings, adminPin: remotePin };
+             newSettings = { ...newSettings, adminPin: remotePin };
              // If PIN was applied remotely, trigger the lockout
              if (remotePin.length > 0) {
                  setRemoteLockTrigger(Date.now());
              }
+          }
+          
+          // --- Handle Remote Dashboard Settings (Theme, Voice, Layout, AI Context) ---
+          if (data.settings && typeof data.settings === 'object') {
+              // 1. Theme
+              if (data.settings.theme) {
+                  newSettings.theme = mapDashboardTheme(data.settings.theme);
+              }
+              // 2. Layout (gridSize)
+              if (data.settings.layout) {
+                  newSettings.gridSize = mapDashboardLayout(data.settings.layout);
+              }
+              // 3. Voice (store raw name, synthesize later since voices load async)
+              if (data.settings.voice) {
+                  newSettings.remoteVoiceName = data.settings.voice;
+              }
+              // 4. AI Context (store to merge with local later)
+              if (data.settings.aiContext !== undefined) {
+                  newSettings.remoteAiContext = data.settings.aiContext;
+              }
           }
 
           return { ...prev, settings: newSettings, pages: [...localPages, ...managedPages] };
@@ -651,6 +731,14 @@ export default function App() {
                     // Save successful upload payload to block duplicate uploads
                     lastUploadedLocalPages.current = serializedLocal;
                 }).catch(e => console.error("Upload sync error", e));
+            } else {
+                // Document doesn't exist yet, initialize it
+                setDoc(studentRef, {
+                    pages: localPages,
+                    lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                }, { merge: true }).then(() => {
+                    lastUploadedLocalPages.current = serializedLocal;
+                }).catch(e => console.error("Create sync error", e));
             }
         });
     }, 2000); // 2-second debounce
@@ -672,11 +760,11 @@ export default function App() {
     const timer = setTimeout(() => {
         const studentRef = doc(fbDb, 'students', linkedStudentId);
         
-        updateDoc(studentRef, {
+        setDoc(studentRef, {
             adminPin: currentPin,
             pin: currentPin, // Push to legacy field as well
             lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-        }).then(() => {
+        }, { merge: true }).then(() => {
             // Save successful upload payload
             lastUploadedPin.current = currentPin;
         }).catch(e => console.error("Upload pin sync error", e));
@@ -836,8 +924,16 @@ export default function App() {
     utterance.rate = config.settings.rate;
     utterance.pitch = config.settings.pitch;
     utterance.volume = config.settings.volume;
-    if (config.settings.voiceURI) {
-      const selectedVoice = availableVoices.find(v => v.voiceURI === config.settings.voiceURI);
+    
+    // Resolve Remote Voice Name vs Local URI dynamically
+    let targetUri = config.settings.voiceURI;
+    if (config.settings.remoteVoiceName) {
+        const resolvedUri = mapDashboardVoice(config.settings.remoteVoiceName, availableVoices);
+        if (resolvedUri) targetUri = resolvedUri;
+    }
+    
+    if (targetUri) {
+      const selectedVoice = availableVoices.find(v => v.voiceURI === targetUri);
       if (selectedVoice) utterance.voice = selectedVoice;
     }
     window.speechSynthesis.speak(utterance);
@@ -956,7 +1052,7 @@ export default function App() {
   };
 
   // --- Device Pairing Flow ---
-  const handleGeneratePairingCode = async () => {
+  const handleGeneratePairingCode = async (onSuccessNotConfigured) => {
     setIsPairing(true);
     // Generate 10 char code
     const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // removed O,0,1,I for clarity
@@ -988,15 +1084,55 @@ export default function App() {
       });
 
       // Listen for dashboard to approve
-      const unsub = onSnapshot(codeRef, (docSnap) => {
+      const unsub = onSnapshot(codeRef, async (docSnap) => {
         const data = docSnap.data();
         if (data && data.status === 'linked' && data.studentId) {
            setLinkedStudentId(data.studentId);
            localStorage.setItem('zip_student_id', data.studentId);
-           setIsPairing(false);
-           setAppPairingCode(null);
-           unsub();
-           alert("Successfully connected to school district!");
+           
+           try {
+               // Check if the remote profile has already been configured by the teacher
+               const studentRef = doc(fbDb, 'students', data.studentId);
+               const studentSnap = await getDoc(studentRef);
+               
+               let isConfigured = false;
+               if (studentSnap.exists()) {
+                   const sData = studentSnap.data();
+                   const hasManagedPages = sData.pages && sData.pages.some(p => p.type === 'managed');
+                   const hasRemotePin = sData.adminPin !== undefined || sData.pin !== undefined;
+                   
+                   if (hasManagedPages || hasRemotePin) {
+                       isConfigured = true;
+                   }
+               }
+
+               if (isConfigured) {
+                   // Profile has data: Auto-complete onboarding
+                   setConfig(prev => ({ ...prev, settings: { ...prev.settings, onboardingComplete: true } }));
+                   setIsPairing(false);
+                   setAppPairingCode(null);
+                   unsub();
+                   alert("Successfully connected to school district! Your settings have been applied.");
+               } else {
+                   // Brand new empty profile: Drop out of pairing overlay and advance wizard
+                   setIsPairing(false);
+                   setAppPairingCode(null);
+                   unsub();
+                   alert("Successfully connected to school district! Please continue your setup.");
+                   if (onSuccessNotConfigured && typeof onSuccessNotConfigured === 'function') {
+                       onSuccessNotConfigured();
+                   }
+               }
+           } catch (err) {
+               console.error("Error checking student config post-pairing", err);
+               setIsPairing(false);
+               setAppPairingCode(null);
+               unsub();
+               alert("Successfully connected to school district!");
+               if (onSuccessNotConfigured && typeof onSuccessNotConfigured === 'function') {
+                   onSuccessNotConfigured();
+               }
+           }
         }
       });
     } catch(e) {
@@ -1143,6 +1279,7 @@ export default function App() {
 
   const getGridClass = () => {
     const s = config.settings.gridSize;
+    if (s === 1) return "grid-cols-1";
     if (s === 2) return "grid-cols-2";
     if (s === 3) return "grid-cols-3";
     if (s === 4) return "grid-cols-4";
@@ -1351,8 +1488,13 @@ export default function App() {
           )}
 
           {/* --- NEW: Magic Bar with combined Context --- */}
+          {/* --- NEW: Magic Bar with combined Context --- */}
           {config.settings.enableSentenceBuilder && (
-            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} context={config.settings.aiContext || getFullContext()} />
+            <MagicBar 
+                sentence={sentence} 
+                onSelect={speakMagicPrediction} 
+                context={config.settings.remoteAiContext ? `${config.settings.remoteAiContext} ${config.settings.aiContext || getFullContext()}`.trim() : (config.settings.aiContext || getFullContext())} 
+            />
           )}
 
           {/* Page Info & Time/Location Context */}
