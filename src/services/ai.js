@@ -3,6 +3,8 @@ import { pipeline, env } from '@xenova/transformers';
 // Configure to use CDN models (no local file setup needed for PWA)
 env.allowLocalModels = false;
 env.useBrowserCache = true;
+// Suppress verbose ONNX web assembly initialization logs (e.g. unused initializers warnings)
+env.backends.onnx.logLevel = 'error';
 
 class AIService {
     constructor() {
