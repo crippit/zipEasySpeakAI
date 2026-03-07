@@ -1759,7 +1759,7 @@ export default function App() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="fixed inset-y-0 right-0 z-40 w-full md:w-96 bg-white shadow-2xl flex flex-col transform transition-transform duration-300">
+        <div className="fixed inset-y-0 right-0 z-40 w-full md:w-96 bg-white dark:bg-slate-900 shadow-2xl flex flex-col transform transition-transform duration-300">
           <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
             <h2 className="text-xl font-bold flex items-center gap-2"><Settings size={20} /> Settings</h2>
             <button onClick={() => setShowSettings(false)} className="hover:text-gray-300"><X size={24} /></button>
@@ -1769,7 +1769,7 @@ export default function App() {
             {/* School Connection Status */}
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><Globe size={16} /> School Connection</h3>
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-4">
+              <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl space-y-4">
                 {linkedStudentId ? (
                   <div>
                     <div className="flex items-center gap-2 text-green-600 font-bold mb-1">
@@ -1812,7 +1812,7 @@ export default function App() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Color Theme</label>
-                  <select value={config.settings.theme || "system"} onChange={e => updateSetting('theme', e.target.value)} className="w-full p-2 border rounded-md text-sm mb-3">
+                  <select value={config.settings.theme || "system"} onChange={e => updateSetting('theme', e.target.value)} className="w-full p-2 border dark:border-slate-700 rounded-md text-sm mb-3 dark:bg-slate-800 dark:text-slate-200">
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
                     <option value="system">Use Device Theme</option>
@@ -1820,7 +1820,7 @@ export default function App() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Grid Size</label>
-                  <select value={config.settings.gridSize || "auto"} onChange={e => updateSetting('gridSize', e.target.value === "auto" ? "auto" : parseInt(e.target.value))} className="w-full p-2 border rounded-md text-sm">
+                  <select value={config.settings.gridSize || "auto"} onChange={e => updateSetting('gridSize', e.target.value === "auto" ? "auto" : parseInt(e.target.value))} className="w-full p-2 border dark:border-slate-700 rounded-md text-sm dark:bg-slate-800 dark:text-slate-200">
                     <option value="auto">Auto (Responsive)</option>
                     <option value={2}>2 Columns</option>
                     <option value={3}>3 Columns</option>
@@ -1831,12 +1831,12 @@ export default function App() {
                 </div>
                 
                 {/* Keyboard Layout Selection */}
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                   <label className="block text-sm font-medium mb-1">Keyboard Layout</label>
                   <select 
                     value={config.settings.keyboardLayout || "qwerty"} 
                     onChange={e => updateKeyboardLayoutSetting(e.target.value)} 
-                    className="w-full p-2 border rounded-md text-sm bg-white"
+                    className="w-full p-2 border dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-800 dark:text-slate-200"
                   >
                     <option value="qwerty">QWERTY</option>
                     <option value="abc">ABC</option>
@@ -1859,7 +1859,7 @@ export default function App() {
             {/* Mode Settings */}
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><MessageSquare size={16} /> Interaction Mode</h3>
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                 
                 <div className="flex items-center justify-between">
                   <div>
@@ -1905,7 +1905,7 @@ export default function App() {
             {/* AI & Context Settings */}
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><BrainCircuit size={16} /> AI & Context</h3>
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-sm">Auto Time Context</div>
@@ -1927,7 +1927,7 @@ export default function App() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Voice</label>
-                  <select value={config.settings.voiceURI || ""} onChange={e => updateSetting('voiceURI', e.target.value)} className="w-full p-2 border rounded-md text-sm">
+                  <select value={config.settings.voiceURI || ""} onChange={e => updateSetting('voiceURI', e.target.value)} className="w-full p-2 border dark:border-slate-700 rounded-md text-sm dark:bg-slate-800 dark:text-slate-200">
                     <option value="">Default Device Voice</option>
                     {displayedVoices.map(v => <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>)}
                   </select>
