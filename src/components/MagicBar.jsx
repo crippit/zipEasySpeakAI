@@ -84,12 +84,7 @@ export default function MagicBar({ sentence, onSelect, context }) {
                     ))}
                 </div>
 
-                {/* Context Badge (Debugging/Visual) */}
-                {context && !modelLoading && (
-                    <div className="absolute top-0 right-0 text-[9px] uppercase font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-bl-lg border-b border-l border-indigo-100 shadow-sm">
-                        {context}
-                    </div>
-                )}
+                {/* Removed Context Badge (Debugging/Visual) */}
             </div>
         </div>
     );

@@ -454,7 +454,7 @@ const Tile = React.memo(({
         {tile.type === 'image' ? (
           <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
         ) : (
-          <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl' : 'text-5xl md:text-6xl'} select-none pointer-events-none`}>{tile.image}</span>
+          <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl text-slate-900 dark:text-slate-900' : 'text-5xl md:text-6xl text-slate-900 dark:text-slate-900'} select-none pointer-events-none`}>{tile.image}</span>
         )}
       </div>
       {showLabels && (
@@ -1253,7 +1253,12 @@ export default function App() {
              <OnboardingWizard 
                  currentConfig={config}
                  onUpdateConfig={(updates) => setConfig(prev => ({ ...prev, settings: { ...prev.settings, ...updates } }))}
-                 onPairRequest={() => { setShowSettings(true); setConfig(prev => ({ ...prev, settings: { ...prev.settings, onboardingComplete: true } })); }}
+                 onPairRequest={() => { 
+                    setShowSettings(true); 
+                    setIsPairing(true);
+                    handleGeneratePairingCode();
+                    setConfig(prev => ({ ...prev, settings: { ...prev.settings, onboardingComplete: true } })); 
+                 }}
                  onComplete={() => console.log('Onboarding complete')}
              />
           </div>
@@ -1905,8 +1910,21 @@ export default function App() {
             {/* AI & Context Settings */}
             <section>
               <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><BrainCircuit size={16} /> AI & Context</h3>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
-                <div className="flex items-center justify-between">
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
+                
+                <div>
+                  <div className="font-bold text-sm mb-1">Custom Artificial Setup Box</div>
+                  <p className="text-xs text-slate-500 mb-2">Instructions the offline AI should know about you.</p>
+                  <textarea 
+                      value={config.settings.aiContext || ""} 
+                      onChange={e => updateSetting('aiContext', e.target.value)} 
+                      rows={3}
+                      className="w-full p-2 border dark:border-slate-700 rounded-md text-sm dark:bg-slate-900 dark:text-slate-200" 
+                      placeholder="e.g. Needs simple language, likes trains, needs to use the bathroom frequently..." 
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
                   <div>
                     <div className="font-bold text-sm">Auto Time Context</div>
                     <p className="text-xs text-slate-500">Detect Morning/Evening automatically</p>

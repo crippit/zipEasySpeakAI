@@ -64,8 +64,8 @@ export default function OnboardingWizard({
 
 
     return (
-        <div className="fixed inset-0 bg-slate-50 flex items-center justify-center p-4 sm:p-6 z-50 overflow-y-auto">
-            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4 sm:p-6 z-50 overflow-y-auto transition-colors">
+            <div className="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh] transition-colors">
                 
                 {/* Header Sequence */}
                 <div className="bg-blue-600 p-6 sm:p-8 text-white relative shrink-0">
@@ -86,28 +86,28 @@ export default function OnboardingWizard({
                                 <div className="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full text-blue-600 mb-2">
                                     <Sparkles size={40} />
                                 </div>
-                                <h2 className="text-2xl font-bold text-slate-800">How do you want to set up?</h2>
-                                <p className="text-slate-500">You can inherit a profile managed by a teacher/parent, or set up entirely offline.</p>
+                                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">How do you want to set up?</h2>
+                                <p className="text-slate-500 dark:text-slate-400">You can inherit a profile managed by a teacher/parent, or set up entirely offline.</p>
                             </div>
 
-                            <button onClick={onPairRequest} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors group">
-                                <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <button onClick={onPairRequest} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
+                                <div className="p-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                     <Link size={24} />
                                 </div>
                                 <div className="text-left flex-1">
-                                    <h3 className="font-bold text-slate-800 text-lg">Pair with Dashboard</h3>
-                                    <p className="text-sm text-slate-500">I have a sync code from my Teacher or SLP</p>
+                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Pair with Dashboard</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">I have a sync code from my Teacher or SLP</p>
                                 </div>
                                 <ArrowRight className="text-indigo-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
                             </button>
 
-                            <button onClick={() => setStep(2)} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 transition-colors group">
-                                <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                            <button onClick={() => setStep(2)} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors group">
+                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                                     <Settings size={24} />
                                 </div>
                                 <div className="text-left flex-1">
-                                    <h3 className="font-bold text-slate-800 text-lg">Setup Locally</h3>
-                                    <p className="text-sm text-slate-500">I want to customize everything on this device</p>
+                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Setup Locally</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">I want to customize everything on this device</p>
                                 </div>
                                 <ArrowRight className="text-emerald-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                             </button>
@@ -119,20 +119,20 @@ export default function OnboardingWizard({
                     {step === 2 && (
                         <div className="space-y-8 animate-in slide-in-from-right direction-normal fade-in duration-300 relative z-10">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
                                     <Volume2 className="text-blue-500" /> Voice & Layout
                                 </h2>
-                                <p className="text-slate-500">Choose how the app sounds and looks.</p>
+                                <p className="text-slate-500 dark:text-slate-400">Choose how the app sounds and looks.</p>
                             </div>
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Text-to-Speech Voice</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Text-to-Speech Voice</label>
                                     <div className="flex gap-2">
                                         <select 
                                             value={wizardState.voiceURI || ""} 
                                             onChange={e => setWizardState(p => ({...p, voiceURI: e.target.value}))} 
-                                            className="flex-1 p-3 border-2 border-slate-200 rounded-xl text-slate-800 bg-white"
+                                            className="flex-1 p-3 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900"
                                         >
                                             <option value="">System Default Voice</option>
                                             {availableVoices.map(v => (
@@ -148,13 +148,13 @@ export default function OnboardingWizard({
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Grid Display Density</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Grid Display Density</label>
                                     <div className="grid grid-cols-2 gap-3">
                                         {['auto', 3, 4, 5, 8].map(size => (
                                             <button 
                                                 key={size}
                                                 onClick={() => setWizardState(p => ({...p, gridSize: size}))}
-                                                className={`p-3 rounded-xl border-2 flex items-center justify-between font-bold ${wizardState.gridSize == size ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                                className={`p-3 rounded-xl border-2 flex items-center justify-between font-bold ${wizardState.gridSize == size ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                             >
                                                 <span>{size === 'auto' ? 'Auto-Fit' : `${size} Columns`}</span>
                                                 {size !== 'auto' && <LayoutGrid size={16} className="opacity-50" />}
@@ -163,7 +163,7 @@ export default function OnboardingWizard({
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Color Theme</label>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Color Theme</label>
                                     <div className="grid grid-cols-3 gap-3">
                                         {[
                                             { id: 'light', label: 'Light', icon: Sun },
@@ -173,9 +173,9 @@ export default function OnboardingWizard({
                                             <button 
                                                 key={themeOption.id}
                                                 onClick={() => setWizardState(p => ({...p, theme: themeOption.id}))}
-                                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 font-bold ${wizardState.theme === themeOption.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 font-bold ${wizardState.theme === themeOption.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                             >
-                                                <themeOption.icon size={20} className={wizardState.theme === themeOption.id ? 'text-blue-500' : 'text-slate-400'} />
+                                                <themeOption.icon size={20} className={wizardState.theme === themeOption.id ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'} />
                                                 <span className="text-xs">{themeOption.label}</span>
                                             </button>
                                         ))}
@@ -184,7 +184,7 @@ export default function OnboardingWizard({
                             </div>
 
                             <div className="flex justify-between pt-4">
-                                <button onClick={() => setStep(1)} className="px-6 py-3 font-bold text-slate-500 hover:text-slate-800">Back</button>
+                                <button onClick={() => setStep(1)} className="px-6 py-3 font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">Back</button>
                                 <button onClick={() => setStep(3)} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2 group">
                                     Next Step <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                 </button>
@@ -197,27 +197,27 @@ export default function OnboardingWizard({
                     {step === 3 && (
                         <div className="space-y-6 animate-in slide-in-from-right direction-normal fade-in duration-300 relative z-10">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
                                     <BrainCircuit className="text-purple-500" /> Train the Predictor
                                 </h2>
-                                <p className="text-slate-500">Zip predicts what you want to say offline. Tell the AI what you like to talk about to make it smarter.</p>
+                                <p className="text-slate-500 dark:text-slate-400">Zip predicts what you want to say offline. Tell the AI what you like to talk about to make it smarter.</p>
                             </div>
 
-                            <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                                <label className="block text-sm font-bold text-purple-900 mb-2">Interests, Hobbies, & Common Needs</label>
+                            <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
+                                <label className="block text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">Interests, Hobbies, & Common Needs</label>
                                 <textarea 
                                     value={wizardState.aiContext}
                                     onChange={e => setWizardState(p => ({...p, aiContext: e.target.value}))}
                                     placeholder="e.g. I love dinosaurs, Minecraft, and playing outside. I frequently ask for sensory toys, water, and breaks..."
-                                    className="w-full p-4 border-2 border-purple-200 rounded-xl bg-white text-slate-800 min-h-[120px] resize-y placeholder:text-slate-400"
+                                    className="w-full p-4 border-2 border-purple-200 dark:border-purple-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[120px] resize-y placeholder:text-slate-400"
                                 />
-                                <p className="text-xs text-purple-600 mt-2 flex items-center gap-1">
+                                <p className="text-xs text-purple-600 dark:text-purple-400 mt-2 flex items-center gap-1">
                                     <Globe size={12} /> This data never leaves your device.
                                 </p>
                             </div>
 
                             <div className="flex justify-between pt-4">
-                                <button onClick={() => setStep(2)} className="px-6 py-3 font-bold text-slate-500 hover:text-slate-800">Back</button>
+                                <button onClick={() => setStep(2)} className="px-6 py-3 font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">Back</button>
                                 <button onClick={handleFinish} className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-md flex items-center gap-2 group">
                                     <CheckCircle2 size={20} /> Finish Setup
                                 </button>
