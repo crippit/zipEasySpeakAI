@@ -87,6 +87,51 @@ const fbApp = initializeApp(firebaseConfig);
 const fbAuth = getAuth(fbApp);
 const fbDb = getFirestore(fbApp);
 
+// --- Remote Dashboard Settings Mappers ---
+const mapDashboardTheme = (remoteTheme) => {
+    if (!remoteTheme) return null;
+    const t = remoteTheme.toLowerCase();
+    if (t.includes('dark')) return 'dark';
+    if (t.includes('light')) return 'light';
+    return 'system';
+};
+
+const mapDashboardLayout = (remoteLayout) => {
+    if (!remoteLayout) return null;
+    const l = remoteLayout.toLowerCase();
+    if (l.includes('list')) return 1;
+    if (l.includes('large')) return 3;
+    return 'auto'; // Default grid
+};
+
+const mapDashboardVoice = (remoteName, availableVoices) => {
+    if (!remoteName || !availableVoices.length) return null;
+    const q = remoteName.toLowerCase();
+    
+    // Exact match first
+    const exact = availableVoices.find(v => v.name.toLowerCase() === q);
+    if (exact) return exact.voiceURI;
+    
+    // Fuzzy search based on keywords
+    const isFemale = q.includes('female') || q.includes('girl') || q.includes('woman');
+    const isMale = q.includes('male') || q.includes('boy') || q.includes('man');
+    
+    let candidates = availableVoices.filter(v => v.lang.startsWith('en-'));
+    if (candidates.length === 0) candidates = availableVoices; // Fallback
+    
+    if (isFemale) {
+        // Look for known female identifiers
+        const f = candidates.find(v => v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Victoria') || v.name.includes('Google US English') || v.name.includes('Karen'));
+        if (f) return f.voiceURI;
+    } else if (isMale) {
+        // Look for known male identifiers
+        const m = candidates.find(v => v.name.includes('Daniel') || v.name.includes('David') || v.name.includes('Mark') || v.name.includes('Alex') || v.name.includes('Fred'));
+        if (m) return m.voiceURI;
+    }
+    
+    // Absolute fallback
+    return candidates[0]?.voiceURI || null;
+};
 
 // --- Keyboard Generators ---
 const getKeyboardTiles = (type) => {
@@ -616,11 +661,31 @@ export default function App() {
           const remotePin = data.adminPin !== undefined ? data.adminPin : (data.pin !== undefined ? data.pin : undefined);
           
           if (remotePin !== undefined && remotePin !== prev.settings.adminPin) {
-             newSettings = { ...prev.settings, adminPin: remotePin };
+             newSettings = { ...newSettings, adminPin: remotePin };
              // If PIN was applied remotely, trigger the lockout
              if (remotePin.length > 0) {
                  setRemoteLockTrigger(Date.now());
              }
+          }
+          
+          // --- Handle Remote Dashboard Settings (Theme, Voice, Layout, AI Context) ---
+          if (data.settings && typeof data.settings === 'object') {
+              // 1. Theme
+              if (data.settings.theme) {
+                  newSettings.theme = mapDashboardTheme(data.settings.theme);
+              }
+              // 2. Layout (gridSize)
+              if (data.settings.layout) {
+                  newSettings.gridSize = mapDashboardLayout(data.settings.layout);
+              }
+              // 3. Voice (store raw name, synthesize later since voices load async)
+              if (data.settings.voice) {
+                  newSettings.remoteVoiceName = data.settings.voice;
+              }
+              // 4. AI Context (store to merge with local later)
+              if (data.settings.aiContext !== undefined) {
+                  newSettings.remoteAiContext = data.settings.aiContext;
+              }
           }
 
           return { ...prev, settings: newSettings, pages: [...localPages, ...managedPages] };
@@ -859,8 +924,16 @@ export default function App() {
     utterance.rate = config.settings.rate;
     utterance.pitch = config.settings.pitch;
     utterance.volume = config.settings.volume;
-    if (config.settings.voiceURI) {
-      const selectedVoice = availableVoices.find(v => v.voiceURI === config.settings.voiceURI);
+    
+    // Resolve Remote Voice Name vs Local URI dynamically
+    let targetUri = config.settings.voiceURI;
+    if (config.settings.remoteVoiceName) {
+        const resolvedUri = mapDashboardVoice(config.settings.remoteVoiceName, availableVoices);
+        if (resolvedUri) targetUri = resolvedUri;
+    }
+    
+    if (targetUri) {
+      const selectedVoice = availableVoices.find(v => v.voiceURI === targetUri);
       if (selectedVoice) utterance.voice = selectedVoice;
     }
     window.speechSynthesis.speak(utterance);
@@ -1206,6 +1279,7 @@ export default function App() {
 
   const getGridClass = () => {
     const s = config.settings.gridSize;
+    if (s === 1) return "grid-cols-1";
     if (s === 2) return "grid-cols-2";
     if (s === 3) return "grid-cols-3";
     if (s === 4) return "grid-cols-4";
@@ -1414,8 +1488,13 @@ export default function App() {
           )}
 
           {/* --- NEW: Magic Bar with combined Context --- */}
+          {/* --- NEW: Magic Bar with combined Context --- */}
           {config.settings.enableSentenceBuilder && (
-            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} context={config.settings.aiContext || getFullContext()} />
+            <MagicBar 
+                sentence={sentence} 
+                onSelect={speakMagicPrediction} 
+                context={config.settings.remoteAiContext ? `${config.settings.remoteAiContext} ${config.settings.aiContext || getFullContext()}`.trim() : (config.settings.aiContext || getFullContext())} 
+            />
           )}
 
           {/* Page Info & Time/Location Context */}

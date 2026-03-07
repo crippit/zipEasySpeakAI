@@ -47,8 +47,30 @@ export default function OnboardingWizard({
 
     const testVoice = () => {
         const utterance = new SpeechSynthesisUtterance("Hello, I am ready to speak");
-        if (wizardState.voiceURI) {
-            const selectedVoice = availableVoices.find(v => v.voiceURI === wizardState.voiceURI);
+        
+        // Remote Teacher Voice takes precedence if synced during Step 1
+        let targetUri = wizardState.voiceURI;
+        if (currentConfig?.settings?.remoteVoiceName) {
+            const mappedName = currentConfig.settings.remoteVoiceName.toLowerCase();
+            const exact = availableVoices.find(v => v.name.toLowerCase() === mappedName);
+            if (exact) targetUri = exact.voiceURI;
+            else {
+                // Fuzzy fallback inside wizard
+                const isFemale = mappedName.includes('female') || mappedName.includes('girl');
+                const isMale = mappedName.includes('male') || mappedName.includes('boy');
+                const candidates = availableVoices.filter(v => v.lang.startsWith('en-'));
+                if (isFemale) {
+                    const f = candidates.find(v => v.name.includes('Samantha') || v.name.includes('Zira'));
+                    if (f) targetUri = f.voiceURI;
+                } else if (isMale) {
+                    const m = candidates.find(v => v.name.includes('Daniel') || v.name.includes('David'));
+                    if (m) targetUri = m.voiceURI;
+                }
+            }
+        }
+
+        if (targetUri) {
+            const selectedVoice = availableVoices.find(v => v.voiceURI === targetUri);
             if (selectedVoice) utterance.voice = selectedVoice;
         }
         window.speechSynthesis.speak(utterance);
