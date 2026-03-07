@@ -1520,19 +1520,19 @@ export default function App() {
       {/* Edit Tile Modal */}
       {editingTile && !showImageSearch && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+          <div className="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
               <h3 className="font-bold text-lg">Edit Button</h3>
               <button onClick={() => setEditingTile(null)}><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Label</label>
-                <input type="text" value={editingTile.label} onChange={e => setEditingTile({ ...editingTile, label: e.target.value })} className="w-full p-3 border rounded-lg" />
+                <input type="text" value={editingTile.label} onChange={e => setEditingTile({ ...editingTile, label: e.target.value })} className="w-full p-3 border dark:border-slate-700 rounded-lg dark:bg-slate-800 dark:text-slate-200" />
               </div>
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Phrase</label>
-                <textarea value={editingTile.phrase} onChange={e => setEditingTile({ ...editingTile, phrase: e.target.value })} className="w-full p-3 border rounded-lg" rows={2} />
+                <textarea value={editingTile.phrase} onChange={e => setEditingTile({ ...editingTile, phrase: e.target.value })} className="w-full p-3 border dark:border-slate-700 rounded-lg dark:bg-slate-800 dark:text-slate-200" rows={2} />
               </div>
               
               {/* NEW: Word Variants for Morphology */}
@@ -1554,34 +1554,34 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Type</label>
-                  <select value={editingTile.type} onChange={e => setEditingTile({ ...editingTile, type: e.target.value })} className="w-full p-3 border rounded-lg bg-white">
+                  <select value={editingTile.type} onChange={e => setEditingTile({ ...editingTile, type: e.target.value })} className="w-full p-3 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200">
                     <option value="emoji">Emoji</option>
                     <option value="image">Image URL</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Color (Fitzgerald Key)</label>
-                  <select value={editingTile.color} onChange={e => setEditingTile({ ...editingTile, color: e.target.value })} className="w-full p-3 border rounded-lg bg-white text-sm">
-                    <option value="bg-white">White (Misc/Core)</option>
-                    <option value="bg-yellow-200">Yellow (People/Pronouns)</option>
-                    <option value="bg-green-200">Green (Verbs/Actions)</option>
-                    <option value="bg-orange-200">Orange (Nouns/Things)</option>
-                    <option value="bg-blue-200">Blue (Adjectives)</option>
-                    <option value="bg-pink-200">Pink (Social)</option>
-                    <option value="bg-purple-200">Purple (Questions)</option>
-                    <option value="bg-red-200">Red (Important)</option>
+                  <select value={editingTile.color} onChange={e => setEditingTile({ ...editingTile, color: e.target.value })} className="w-full p-3 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white text-sm">
+                    <option className="bg-white text-black" value="bg-white">White (Misc/Core)</option>
+                    <option className="bg-yellow-200 text-black" value="bg-yellow-200">Yellow (People/Pronouns)</option>
+                    <option className="bg-green-200 text-black" value="bg-green-200">Green (Verbs/Actions)</option>
+                    <option className="bg-orange-200 text-black" value="bg-orange-200">Orange (Nouns/Things)</option>
+                    <option className="bg-blue-200 text-black" value="bg-blue-200">Blue (Adjectives)</option>
+                    <option className="bg-pink-200 text-black" value="bg-pink-200">Pink (Social)</option>
+                    <option className="bg-purple-200 text-black" value="bg-purple-200">Purple (Questions)</option>
+                    <option className="bg-red-200 text-black" value="bg-red-200">Red (Important)</option>
                   </select>
                 </div>
               </div>
 
               {/* Page Linking & Action Tile Features */}
-              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 space-y-3">
+              <div className="bg-blue-50 dark:bg-slate-800 p-3 rounded-lg border border-blue-100 dark:border-slate-700 space-y-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-blue-600 mb-1 flex items-center gap-1"><ArrowRightCircle size={12} /> Link to Page</label>
+                  <label className="block text-xs font-bold uppercase text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1"><ArrowRightCircle size={12} /> Link to Page</label>
                   <select
                     value={editingTile.linkToPage || ""}
                     onChange={e => setEditingTile({ ...editingTile, linkToPage: e.target.value })}
-                    className="w-full p-2 border rounded-md text-sm bg-white"
+                    className="w-full p-2 border dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-900 dark:text-slate-200"
                   >
                     <option value="">-- No Link (Stay here) --</option>
                     {config.pages.map(p => (
@@ -1608,7 +1608,7 @@ export default function App() {
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-500 mb-1">{editingTile.type === 'emoji' ? 'Emoji' : 'Image URL'}</label>
                 <div className="flex gap-2">
-                  <input type="text" value={editingTile.image} onChange={e => setEditingTile({ ...editingTile, image: e.target.value })} className="flex-1 p-3 border rounded-lg text-sm" />
+                  <input type="text" value={editingTile.image} onChange={e => setEditingTile({ ...editingTile, image: e.target.value })} className="flex-1 p-3 border dark:border-slate-700 rounded-lg text-sm dark:bg-slate-800 dark:text-slate-200" />
                   <button onClick={() => { setSearchQuery(editingTile.label || ""); setShowImageSearch(true); }} className="p-3 bg-blue-100 text-blue-600 rounded-lg"><Search size={20} /></button>
                 </div>
               </div>
@@ -1630,7 +1630,7 @@ export default function App() {
       {/* Image Search Modal */}
       {showImageSearch && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col relative overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col relative overflow-hidden">
 
             {/* Loading Overlay */}
             {isDownloading && (
@@ -1641,18 +1641,18 @@ export default function App() {
               </div>
             )}
 
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg flex items-center gap-2"><Search size={20} className="text-blue-600" /> Search Symbols</h3>
+            <div className="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 dark:text-white">
+              <h3 className="font-bold text-lg flex items-center gap-2"><Search size={20} className="text-blue-600 dark:text-blue-400" /> Search Symbols</h3>
               <button onClick={() => setShowImageSearch(false)}><X size={20} /></button>
             </div>
-            <div className="p-4 border-b bg-white">
+            <div className="p-4 border-b dark:border-slate-700 bg-white dark:bg-slate-900">
               <div className="flex gap-2">
-                <input type="text" autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && searchSymbols()} placeholder="Search..." className="flex-1 p-3 border rounded-xl" />
+                <input type="text" autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && searchSymbols()} placeholder="Search..." className="flex-1 p-3 border dark:border-slate-700 rounded-xl dark:bg-slate-800 dark:text-slate-200" />
                 <button onClick={searchSymbols} disabled={isSearching} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl disabled:opacity-50">{isSearching ? <Loader2 className="animate-spin" /> : "Search"}</button>
               </div>
               <div className="text-xs text-slate-400 mt-2 text-center">Click an image to select it. Images are saved offline.</div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900">
               {Array.isArray(searchResults) && searchResults.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {searchResults.map((result) => (
@@ -1672,29 +1672,29 @@ export default function App() {
       {/* Edit Page Modal */}
       {editingPage && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+          <div className="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
               <h3 className="font-bold text-lg">Edit Page</h3>
               <button onClick={() => { setEditingPage(null); setDeleteConfirm(false); }}><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Name</label>
-                <input type="text" value={editingPage.label} onChange={e => setEditingPage({ ...editingPage, label: e.target.value })} className="w-full p-3 border rounded-lg" />
+                <input type="text" value={editingPage.label} onChange={e => setEditingPage({ ...editingPage, label: e.target.value })} className="w-full p-3 border dark:border-slate-700 rounded-lg dark:bg-slate-800 dark:text-slate-200" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Icon</label>
-                  <input type="text" value={editingPage.icon} onChange={e => setEditingPage({ ...editingPage, icon: e.target.value })} className="w-full p-3 border rounded-lg text-center" />
+                  <input type="text" value={editingPage.icon} onChange={e => setEditingPage({ ...editingPage, icon: e.target.value })} className="w-full p-3 border dark:border-slate-700 rounded-lg text-center dark:bg-slate-800 dark:text-slate-200" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Theme</label>
-                  <select value={editingPage.color} onChange={e => setEditingPage({ ...editingPage, color: e.target.value })} className="w-full p-3 border rounded-lg bg-white">
-                    <option value="bg-slate-100">Gray</option>
-                    <option value="bg-blue-50">Blue</option>
-                    <option value="bg-green-50">Green</option>
-                    <option value="bg-purple-50">Purple</option>
-                    <option value="bg-orange-50">Orange</option>
+                  <select value={editingPage.color} onChange={e => setEditingPage({ ...editingPage, color: e.target.value })} className="w-full p-3 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 dark:text-white">
+                    <option className="bg-slate-100 text-black" value="bg-slate-100">Gray</option>
+                    <option className="bg-blue-50 text-black" value="bg-blue-50">Blue</option>
+                    <option className="bg-green-50 text-black" value="bg-green-50">Green</option>
+                    <option className="bg-purple-50 text-black" value="bg-purple-50">Purple</option>
+                    <option className="bg-orange-50 text-black" value="bg-orange-50">Orange</option>
                   </select>
                 </div>
               </div>
@@ -1732,13 +1732,13 @@ export default function App() {
       {/* PIN Prompt */}
       {pinPrompt && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
-            <Lock className="mx-auto text-blue-600 mb-4" size={40} />
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center dark:text-slate-100">
+            <Lock className="mx-auto text-blue-600 dark:text-blue-400 mb-4" size={40} />
             <h3 className="font-bold text-lg mb-2">Enter Admin PIN</h3>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-4">
               {pinContext === 'settings' ? 'Enter PIN to access Settings' : 'Enter PIN to unlock Edit Mode'}
             </p>
-            <input type="password" autoFocus value={pinInput} onChange={e => setPinInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifyPin()} className="w-full text-center text-2xl tracking-widest p-3 border rounded-lg mb-4" placeholder="****" />
+            <input type="password" autoFocus value={pinInput} onChange={e => setPinInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifyPin()} className="w-full text-center text-2xl tracking-widest p-3 border dark:border-slate-700 rounded-lg mb-4 dark:bg-slate-800 dark:text-slate-200" placeholder="****" />
             <div className="flex gap-2 mb-4">
               <button onClick={() => { setPinPrompt(false); setPinContext(null); setPinInput(""); }} className="flex-1 py-2 rounded-lg bg-gray-200">Cancel</button>
               <button onClick={verifyPin} className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-bold">Unlock</button>
