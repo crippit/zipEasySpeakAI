@@ -582,10 +582,10 @@ export default function App() {
     const studentRef = doc(fbDb, 'students', linkedStudentId);
 
     // Initial heartbeat
-    updateDoc(studentRef, { 
+    setDoc(studentRef, { 
       status: 'online', 
       lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-    }).catch(e => console.warn(e));
+    }, { merge: true }).catch(e => console.warn(e));
 
     const unsub = onSnapshot(studentRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -666,6 +666,14 @@ export default function App() {
                     // Save successful upload payload to block duplicate uploads
                     lastUploadedLocalPages.current = serializedLocal;
                 }).catch(e => console.error("Upload sync error", e));
+            } else {
+                // Document doesn't exist yet, initialize it
+                setDoc(studentRef, {
+                    pages: localPages,
+                    lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                }, { merge: true }).then(() => {
+                    lastUploadedLocalPages.current = serializedLocal;
+                }).catch(e => console.error("Create sync error", e));
             }
         });
     }, 2000); // 2-second debounce
@@ -687,11 +695,11 @@ export default function App() {
     const timer = setTimeout(() => {
         const studentRef = doc(fbDb, 'students', linkedStudentId);
         
-        updateDoc(studentRef, {
+        setDoc(studentRef, {
             adminPin: currentPin,
             pin: currentPin, // Push to legacy field as well
             lastSync: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-        }).then(() => {
+        }, { merge: true }).then(() => {
             // Save successful upload payload
             lastUploadedPin.current = currentPin;
         }).catch(e => console.error("Upload pin sync error", e));
