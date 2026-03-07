@@ -552,7 +552,22 @@ export default function App() {
 
         upgradedPages = upgradedPages.filter(p => p.id !== 'p_qwerty_full');
 
-        return { ...DEFAULT_CONFIG, ...parsed, version: APP_VERSION, settings: { ...DEFAULT_CONFIG.settings, ...(parsed.settings || {}) }, pages: upgradedPages };
+        // Detect if this is an existing user upgrading from before Onboarding was introduced, or if they are already paired
+        const isUpgradingFromBeforeOnboarding = (parsed.version || 1) < 4;
+        const hasLinkedId = !!localStorage.getItem('zip_student_id');
+        const finalOnboardingState = isUpgradingFromBeforeOnboarding || hasLinkedId ? true : (parsed.settings?.onboardingComplete || false);
+
+        return { 
+          ...DEFAULT_CONFIG, 
+          ...parsed, 
+          version: APP_VERSION, 
+          settings: { 
+            ...DEFAULT_CONFIG.settings, 
+            ...(parsed.settings || {}),
+            onboardingComplete: finalOnboardingState
+          }, 
+          pages: upgradedPages 
+        };
       }
     } catch (e) {
       console.error("Failed to load config", e);
@@ -956,7 +971,7 @@ export default function App() {
   };
 
   // --- Device Pairing Flow ---
-  const handleGeneratePairingCode = async () => {
+  const handleGeneratePairingCode = async (onSuccessNotConfigured) => {
     setIsPairing(true);
     // Generate 10 char code
     const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // removed O,0,1,I for clarity
@@ -988,15 +1003,55 @@ export default function App() {
       });
 
       // Listen for dashboard to approve
-      const unsub = onSnapshot(codeRef, (docSnap) => {
+      const unsub = onSnapshot(codeRef, async (docSnap) => {
         const data = docSnap.data();
         if (data && data.status === 'linked' && data.studentId) {
            setLinkedStudentId(data.studentId);
            localStorage.setItem('zip_student_id', data.studentId);
-           setIsPairing(false);
-           setAppPairingCode(null);
-           unsub();
-           alert("Successfully connected to school district!");
+           
+           try {
+               // Check if the remote profile has already been configured by the teacher
+               const studentRef = doc(fbDb, 'students', data.studentId);
+               const studentSnap = await getDoc(studentRef);
+               
+               let isConfigured = false;
+               if (studentSnap.exists()) {
+                   const sData = studentSnap.data();
+                   const hasManagedPages = sData.pages && sData.pages.some(p => p.type === 'managed');
+                   const hasRemotePin = sData.adminPin !== undefined || sData.pin !== undefined;
+                   
+                   if (hasManagedPages || hasRemotePin) {
+                       isConfigured = true;
+                   }
+               }
+
+               if (isConfigured) {
+                   // Profile has data: Auto-complete onboarding
+                   setConfig(prev => ({ ...prev, settings: { ...prev.settings, onboardingComplete: true } }));
+                   setIsPairing(false);
+                   setAppPairingCode(null);
+                   unsub();
+                   alert("Successfully connected to school district! Your settings have been applied.");
+               } else {
+                   // Brand new empty profile: Drop out of pairing overlay and advance wizard
+                   setIsPairing(false);
+                   setAppPairingCode(null);
+                   unsub();
+                   alert("Successfully connected to school district! Please continue your setup.");
+                   if (onSuccessNotConfigured && typeof onSuccessNotConfigured === 'function') {
+                       onSuccessNotConfigured();
+                   }
+               }
+           } catch (err) {
+               console.error("Error checking student config post-pairing", err);
+               setIsPairing(false);
+               setAppPairingCode(null);
+               unsub();
+               alert("Successfully connected to school district!");
+               if (onSuccessNotConfigured && typeof onSuccessNotConfigured === 'function') {
+                   onSuccessNotConfigured();
+               }
+           }
         }
       });
     } catch(e) {

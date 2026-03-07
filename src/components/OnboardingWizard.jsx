@@ -120,7 +120,7 @@ export default function OnboardingWizard({
                                         <p className="text-slate-500 dark:text-slate-400">You can inherit a profile managed by a teacher/parent, or set up entirely offline.</p>
                                     </div>
 
-                                    <button onClick={onPairRequest} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
+                                    <button onClick={() => onPairRequest(() => setStep(2))} className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
                                         <div className="p-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                             <Link size={24} />
                                         </div>
