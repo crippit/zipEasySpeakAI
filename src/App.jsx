@@ -1217,6 +1217,8 @@ export default function App() {
     } catch (e) { setEditingTile(prev => ({ ...prev, type: 'image', image: url })); setShowImageSearch(false); setIsDownloading(false); setIsSearching(false); }
   };
 
+  const isTypingPage = activePageId === 'p_keyboard' || activePageId === 'p_numbers';
+
   return (
     <div className={`min-h-screen ${isTypingPage ? 'bg-slate-100' : activePage.color || 'bg-slate-50'} font-sans text-slate-800 flex flex-col md:flex-row overflow-hidden`}>
 
