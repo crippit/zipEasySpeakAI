@@ -50,6 +50,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
+import OnboardingWizard from './components/OnboardingWizard';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
 
 /**
@@ -167,6 +168,8 @@ const DEFAULT_CONFIG = {
     openSymbolsSecret: "",
     gridSize: "auto",
     offlineOnly: false,
+    onboardingComplete: false,
+    aiContext: "",
     enableSentenceBuilder: true,
     enableTimeContext: true,
     speakOnSelect: false,
@@ -1215,7 +1218,18 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans text-slate-800 flex flex-col md:flex-row overflow-hidden">
+    <div className={`min-h-screen ${isTypingPage ? 'bg-slate-100' : activePage.color || 'bg-slate-50'} font-sans text-slate-800 flex flex-col md:flex-row overflow-hidden`}>
+
+      {!config.settings.onboardingComplete && (
+          <div className="absolute inset-0 z-[100] bg-white text-slate-900">
+             <OnboardingWizard 
+                 currentConfig={config}
+                 onUpdateConfig={(updates) => setConfig(prev => ({ ...prev, settings: { ...prev.settings, ...updates } }))}
+                 onPairRequest={() => { setShowSettings(true); setConfig(prev => ({ ...prev, settings: { ...prev.settings, onboardingComplete: true } })); }}
+                 onComplete={() => console.log('Onboarding complete')}
+             />
+          </div>
+      )}
 
       {/* Sidebar */}
       <nav className="w-full md:w-24 md:h-screen bg-white shadow-xl flex md:flex-col overflow-x-auto md:overflow-y-auto md:overflow-x-hidden shrink-0 z-20">
@@ -1289,7 +1303,7 @@ export default function App() {
 
           {/* --- NEW: Magic Bar with combined Context --- */}
           {config.settings.enableSentenceBuilder && (
-            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} context={getFullContext()} />
+            <MagicBar sentence={sentence} onSelect={speakMagicPrediction} context={config.settings.aiContext || getFullContext()} />
           )}
 
           {/* Page Info & Time/Location Context */}
