@@ -44,7 +44,8 @@ class AIService {
         }
 
         if (context) {
-            prompt = `Context: ${context}. ${prompt}`;
+            // Flan-T5 is sensitive. We must strongly instruct it NOT to repeat the context.
+            prompt = `Background context about me: ${context}. Based on this, ${prompt.toLowerCase()}. Do not repeat the background context.`;
         }
 
         try {
@@ -59,12 +60,18 @@ class AIService {
             // Deduplicate
             const uniqueSuggestions = [...new Set(output.map(o => o.generated_text))];
 
-            // Filter junk
+            // Filter junk and aggressively strip any echoed context
+            const contextWords = context ? context.toLowerCase().split(/\s+/) : [];
             let validSuggestions = uniqueSuggestions.filter(s => {
                 const lower = s.toLowerCase();
+                
+                // If it just regurgitated the context exactly, drop it
+                if (context && lower.includes(context.toLowerCase())) return false;
+
                 return !lower.includes("context") &&
                     !lower.includes("sorry") &&
                     !lower.includes("provide") &&
+                    !lower.includes("background context") &&
                     s.length > 2 &&
                     s.split(' ').length < 15;
             });

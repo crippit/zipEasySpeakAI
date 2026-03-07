@@ -40,12 +40,12 @@ export default function MagicBar({ sentence, onSelect, context }) {
     return (
         <div className="mx-4 md:mx-6 mb-4">
             <div className={`
-        bg-white border-2 border-indigo-100 rounded-2xl p-2 md:p-3 flex items-center gap-3 relative overflow-hidden shadow-lg transition-all
+        bg-white dark:bg-slate-800 border-2 border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-2 md:p-3 flex items-center gap-3 relative overflow-hidden shadow-lg transition-all
         ${modelLoading ? 'opacity-80' : 'opacity-100'}
       `}>
 
                 {/* Label / Status Indicator */}
-                <div className="flex items-center gap-2 text-indigo-600 font-extrabold text-xs uppercase tracking-wider shrink-0 border-r-2 border-indigo-100 pr-3 py-1">
+                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs uppercase tracking-wider shrink-0 border-r-2 border-indigo-100 dark:border-indigo-900/50 pr-3 py-1">
                     {modelLoading ? (
                         <>
                             <Loader2 className="animate-spin text-indigo-500" size={18} />
@@ -58,7 +58,7 @@ export default function MagicBar({ sentence, onSelect, context }) {
                         </>
                     ) : (
                         <>
-                            <BrainCircuit size={18} className="text-indigo-500" />
+                            <BrainCircuit size={18} className="text-indigo-500 dark:text-indigo-400" />
                             <span className="hidden sm:inline">AI Ready</span>
                         </>
                     )}
@@ -69,7 +69,7 @@ export default function MagicBar({ sentence, onSelect, context }) {
 
                     {/* Initial State Hint */}
                     {!modelLoading && sentence.length === 0 && (
-                        <span className="text-indigo-300 text-sm font-medium italic pl-1">Start typing...</span>
+                        <span className="text-indigo-300 dark:text-indigo-500 text-sm font-medium italic pl-1">Start typing...</span>
                     )}
 
                     {/* Results */}
@@ -77,19 +77,14 @@ export default function MagicBar({ sentence, onSelect, context }) {
                         <button
                             key={idx}
                             onClick={() => onSelect(text)}
-                            className="flex-shrink-0 animate-in fade-in slide-in-from-left-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-800 border border-indigo-200 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all whitespace-nowrap active:scale-95"
+                            className="flex-shrink-0 animate-in fade-in slide-in-from-left-2 bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white dark:hover:text-white text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700/50 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all whitespace-nowrap active:scale-95"
                         >
                             {text}
                         </button>
                     ))}
                 </div>
 
-                {/* Context Badge (Debugging/Visual) */}
-                {context && !modelLoading && (
-                    <div className="absolute top-0 right-0 text-[9px] uppercase font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-bl-lg border-b border-l border-indigo-100 shadow-sm">
-                        {context}
-                    </div>
-                )}
+                {/* Removed Context Badge (Debugging/Visual) */}
             </div>
         </div>
     );
