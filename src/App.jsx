@@ -47,8 +47,7 @@ import {
   Globe,
   Link,
   ShieldCheck,
-  EyeOff,
-  MessageSquareWarning
+  EyeOff
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import OnboardingWizard from './components/OnboardingWizard';
@@ -2021,7 +2020,7 @@ export default function App() {
             <hr className="border-slate-100" />
 
             <section>
-              <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><MessageSquareWarning size={16} /> Support & Feedback</h3>
+              <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><AlertTriangle size={16} /> Support & Feedback</h3>
               <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-transparent dark:border-slate-700">
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">If Zip's offline Magic Prediction AI generates unhelpful, offensive, or severely inappropriate behavior, please report it to us immediately.</p>
                 <a href="https://forms.gle/XcKp1LaxkH3DFfVF8" target="_blank" rel="noopener noreferrer" className="block w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm text-center">
