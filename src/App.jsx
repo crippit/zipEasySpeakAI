@@ -47,10 +47,12 @@ import {
   Globe,
   Link,
   ShieldCheck,
-  EyeOff
+  EyeOff,
+  MessageSquareWarning
 } from 'lucide-react';
 import MagicBar from './components/MagicBar';
 import OnboardingWizard from './components/OnboardingWizard';
+import WhatsNewModal from './components/WhatsNewModal';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
 
 /**
@@ -157,8 +159,9 @@ const LOCATIONS = [
 ];
 
 // --- EXPANDED Default Configuration Data ---
+const APP_VERSION = 4;
 const DEFAULT_CONFIG = {
-  version: 3,
+  version: APP_VERSION,
   settings: {
     voiceURI: null,
     rate: 1.0,
@@ -511,6 +514,15 @@ export default function App() {
       signInAnonymously(fbAuth).catch(console.error);
   }, []);
 
+  // --- Version Tracking ---
+  const [showWhatsNew, setShowWhatsNew] = useState(() => {
+      try {
+          const saved = localStorage.getItem('zip_easyspeak_config');
+          if (saved) return (JSON.parse(saved).version || 1) < APP_VERSION;
+      } catch (e) {}
+      return false;
+  });
+
   // --- Main Config State ---
   const [config, setConfig] = useState(() => {
     try {
@@ -541,7 +553,7 @@ export default function App() {
 
         upgradedPages = upgradedPages.filter(p => p.id !== 'p_qwerty_full');
 
-        return { ...DEFAULT_CONFIG, ...parsed, settings: { ...DEFAULT_CONFIG.settings, ...(parsed.settings || {}) }, pages: upgradedPages };
+        return { ...DEFAULT_CONFIG, ...parsed, version: APP_VERSION, settings: { ...DEFAULT_CONFIG.settings, ...(parsed.settings || {}) }, pages: upgradedPages };
       }
     } catch (e) {
       console.error("Failed to load config", e);
@@ -1263,6 +1275,10 @@ export default function App() {
                  onComplete={() => console.log('Onboarding complete')}
              />
           </div>
+      )}
+
+      {showWhatsNew && !isPairing && config.settings.onboardingComplete && (
+          <WhatsNewModal version="1.1" onClose={() => setShowWhatsNew(false)} />
       )}
 
       {/* Sidebar */}
@@ -2000,6 +2016,18 @@ export default function App() {
                   <p className="text-xs text-slate-500">Required for symbol search API.</p>
                 </div>
               )}
+            </section>
+
+            <hr className="border-slate-100" />
+
+            <section>
+              <h3 className="text-sm font-bold uppercase text-slate-400 mb-3 flex items-center gap-2"><MessageSquareWarning size={16} /> Support & Feedback</h3>
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-transparent dark:border-slate-700">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">If Zip's offline Magic Prediction AI generates unhelpful, offensive, or severely inappropriate behavior, please report it to us immediately.</p>
+                <a href="https://forms.gle/XcKp1LaxkH3DFfVF8" target="_blank" rel="noopener noreferrer" className="block w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm text-center">
+                    Report Inappropriate AI Suggestion
+                </a>
+              </div>
             </section>
 
             <hr className="border-slate-100" />
