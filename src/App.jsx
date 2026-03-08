@@ -499,7 +499,14 @@ const Tile = React.memo(({
     >
       <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 pointer-events-none">
         {tile.type === 'image' ? (
-          <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
+          tile.image && String(tile.image).trim().startsWith('<svg') ? (
+            <div 
+              className="max-w-full max-h-full flex items-center justify-center pointer-events-none w-3/4 h-3/4"
+              dangerouslySetInnerHTML={{ __html: tile.image }} 
+            />
+          ) : (
+            <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
+          )
         ) : (
           <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl text-slate-900 dark:text-slate-900' : 'text-5xl md:text-6xl text-slate-900 dark:text-slate-900'} select-none pointer-events-none`}>{tile.image}</span>
         )}
