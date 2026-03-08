@@ -817,14 +817,16 @@ export default function App() {
   }, [remoteLockTrigger]);
 
   // --- Handle exiting Edit Mode on a Hidden Page ---
+  const prevEditMode = useRef(isEditMode);
   useEffect(() => {
       // If we exit edit mode, and the current page is hidden, safely route to the first visible page
-      if (!isEditMode && activePage?.hidden) {
+      if (prevEditMode.current && !isEditMode && activePage?.hidden) {
           const firstVisible = config.pages.find(p => !p.hidden);
           if (firstVisible && firstVisible.id !== activePageId) {
               setActivePageId(firstVisible.id);
           }
       }
+      prevEditMode.current = isEditMode;
   }, [isEditMode, activePage, config.pages, activePageId]);
 
   // --- Global Tile Aggregation for Predictions ---
