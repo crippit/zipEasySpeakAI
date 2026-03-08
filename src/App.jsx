@@ -203,7 +203,7 @@ const LOCATIONS = [
 ];
 
 // --- EXPANDED Default Configuration Data ---
-const APP_VERSION = 4;
+const APP_VERSION = 5;
 const DEFAULT_CONFIG = {
   version: APP_VERSION,
   settings: {

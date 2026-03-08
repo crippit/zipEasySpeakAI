@@ -24,28 +24,28 @@ export default function WhatsNewModal({ version, onClose }) {
                 <div className="p-8 overflow-y-auto space-y-6">
                     <div>
                         <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="text-emerald-500" size={18} /> Deep Dark Protocol
+                            <CheckCircle2 className="text-emerald-500" size={18} /> Support for Base64 & Custom SVGs
                         </h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 pl-6 space-y-2">
-                            A complete sweeping overhaul to Zip EasySpeak's design elements introducing comprehensive Dark Mode support across all configuration panels, onboarding flows, setup menus, and keyboard tiles. Keep your eyes rested!
+                            The application now natively supports rendering raw `&lt;svg&gt;` inline elements and `base64` embedded data sources through the Custom AAC JSON pages API. Generate highly customized symbol libraries without external hosting!
                         </p>
                     </div>
 
                     <div>
                         <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="text-emerald-500" size={18} /> Natively Intelligent Setup
+                            <CheckCircle2 className="text-emerald-500" size={18} /> Background Auto-Updating
                         </h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 pl-6">
-                            A streamlined Onboarding sequence. Train your offline local AI instantly and pull down district configurations rapidly through embedded QR pairing workflows.
+                            The Progressive Web Application (PWA) framework has been upgraded with a persistent active Service Worker connection. The app will now silently listen for dashboard updates and dynamically load new patches in the background. 
                         </p>
                     </div>
 
                     <div>
                         <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="text-emerald-500" size={18} /> Security & Reporting Tools
+                            <CheckCircle2 className="text-emerald-500" size={18} /> Bug Fixes & UX improvements
                         </h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 pl-6">
-                            Added dedicated links in the App Settings to directly submit reports of erroneous, off-topic, or inappropriate offline Xenova/Transformers suggestions for review & safety alignment.
+                            Resolved a bug where using a button Tile to navigate to a Custom Hidden Page would incorrectly force the user back to the home screen.
                         </p>
                     </div>
                 </div>
