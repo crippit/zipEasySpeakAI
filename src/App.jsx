@@ -203,7 +203,7 @@ const LOCATIONS = [
 ];
 
 // --- EXPANDED Default Configuration Data ---
-const APP_VERSION = 5;
+const APP_VERSION = 6;
 const DEFAULT_CONFIG = {
   version: APP_VERSION,
   settings: {
@@ -489,7 +489,7 @@ const Tile = React.memo(({
         }
       }}
       
-      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', touchAction: editMode ? 'none' : 'auto' }}
 
       className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
       ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
@@ -1424,7 +1424,7 @@ export default function App() {
       )}
 
       {showWhatsNew && !isPairing && config.settings.onboardingComplete && (
-          <WhatsNewModal version="1.5" onClose={() => setShowWhatsNew(false)} />
+          <WhatsNewModal version="1.6" onClose={() => setShowWhatsNew(false)} />
       )}
 
       {/* Sidebar */}
@@ -1439,9 +1439,11 @@ export default function App() {
               key={page.id}
               draggable={isEditMode}
               onDragStart={(e) => handleDragStart(e, page, 'page')}
+              onDragEnter={handleDragOver}
               onDragOver={handleDragOver}
               onDrop={(e) => handlePageDrop(e, page)}
               className="relative"
+              style={{ touchAction: isEditMode ? 'none' : 'auto' }}
             >
               <button onClick={() => setActivePageId(page.id)} className={`relative flex flex-col items-center justify-center p-2 rounded-xl w-20 h-20 md:w-16 md:h-16 shrink-0 transition-all ${activePageId === page.id ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300'} ${isEditMode ? 'cursor-grab' : ''} ${page.hidden ? 'opacity-60 grayscale bg-slate-200 dark:bg-slate-800' : ''}`}>
                 {page.type === 'managed' && <ShieldCheck size={14} className={`absolute top-1 left-1 ${activePageId === page.id ? 'text-blue-200' : 'text-blue-500'}`} />}
@@ -1618,6 +1620,7 @@ export default function App() {
                             showLabels={showLabels}
                             onLongPress={setActiveMorphology}
                             onDragStart={(e, t) => handleDragStart(e, t, 'tile')}
+                            onDragEnter={handleDragOver}
                             onDragOver={handleDragOver}
                             onDrop={(e, t) => handleTileDrop(e, t)}
                             onEdit={setEditingTile}
@@ -1648,6 +1651,7 @@ export default function App() {
                  showLabels={showLabels}
                  onLongPress={setActiveMorphology}
                  onDragStart={(e, t) => handleDragStart(e, t, 'tile')}
+                 onDragEnter={handleDragOver}
                  onDragOver={handleDragOver}
                  onDrop={(e, t) => handleTileDrop(e, t)}
                  onEdit={setEditingTile}
@@ -2219,7 +2223,7 @@ export default function App() {
             </button>
 
           </div>
-          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.5 by <span className="font-bold">Zip Solutions</span></div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.6 by <span className="font-bold">Zip Solutions</span></div>
         </div>
       )}
     </div>

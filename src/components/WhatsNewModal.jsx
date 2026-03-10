@@ -44,8 +44,10 @@ export default function WhatsNewModal({ version, onClose }) {
                         <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-2">
                             <CheckCircle2 className="text-emerald-500" size={18} /> Bug Fixes & UX improvements
                         </h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 pl-6">
-                            Resolved a bug where using a button Tile to navigate to a Custom Hidden Page would incorrectly force the user back to the home screen.
+                        <p className="text-sm text-slate-600 dark:text-slate-400 pl-6 space-y-2">
+                            <span>Resolved a bug where using a button Tile to navigate to a Custom Hidden Page would incorrectly force the user back to the home screen.</span>
+                            <br/>
+                            <span>Implemented a touch-screen Drag and Drop Engine polyfill, restoring full Edit Mode re-ordering support on iOS and Android devices!</span>
                         </p>
                     </div>
                 </div>
