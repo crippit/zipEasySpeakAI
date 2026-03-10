@@ -203,7 +203,7 @@ const LOCATIONS = [
 ];
 
 // --- EXPANDED Default Configuration Data ---
-const APP_VERSION = 5;
+const APP_VERSION = 6;
 const DEFAULT_CONFIG = {
   version: APP_VERSION,
   settings: {
@@ -1424,7 +1424,7 @@ export default function App() {
       )}
 
       {showWhatsNew && !isPairing && config.settings.onboardingComplete && (
-          <WhatsNewModal version="1.5" onClose={() => setShowWhatsNew(false)} />
+          <WhatsNewModal version="1.6" onClose={() => setShowWhatsNew(false)} />
       )}
 
       {/* Sidebar */}
@@ -2223,7 +2223,7 @@ export default function App() {
             </button>
 
           </div>
-          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.5 by <span className="font-bold">Zip Solutions</span></div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.6 by <span className="font-bold">Zip Solutions</span></div>
         </div>
       )}
     </div>
