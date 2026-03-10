@@ -48,6 +48,8 @@ export default function WhatsNewModal({ version, onClose }) {
                             <span>Resolved a bug where using a button Tile to navigate to a Custom Hidden Page would incorrectly force the user back to the home screen.</span>
                             <br/>
                             <span>Implemented a touch-screen Drag and Drop Engine polyfill, restoring full Edit Mode re-ordering support on iOS and Android devices!</span>
+                            <br/>
+                            <span>Tiles now visibly shuffle and make room for the element you are dragging in real-time.</span>
                         </p>
                     </div>
                 </div>

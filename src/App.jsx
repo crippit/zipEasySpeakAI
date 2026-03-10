@@ -203,7 +203,7 @@ const LOCATIONS = [
 ];
 
 // --- EXPANDED Default Configuration Data ---
-const APP_VERSION = 6;
+const APP_VERSION = 7;
 const DEFAULT_CONFIG = {
   version: APP_VERSION,
   settings: {
@@ -382,7 +382,9 @@ const Tile = React.memo(({
   showLabels, 
   onLongPress, 
   onDragStart, 
+  onDragEnter,
   onDragOver, 
+  onDragEnd,
   onDrop, 
   onEdit, 
   onDelete,
@@ -464,7 +466,9 @@ const Tile = React.memo(({
     <div
       draggable={editMode && !isManagedPage}
       onDragStart={(e) => onDragStart(e, tile)}
+      onDragEnter={(e) => onDragEnter && onDragEnter(e, tile)}
       onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
       onDrop={(e) => onDrop(e, tile)}
       
       onTouchStart={handlePressStart}
@@ -1168,19 +1172,21 @@ export default function App() {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleTileDrop = (e, targetTile) => {
+  const handleDragEnd = (e) => {
+    setDraggedTile(null);
+    setDraggedPage(null);
+  };
+
+  const handleTileDragEnter = (e, targetTile) => {
     if (!isEditMode) return;
     e.preventDefault();
-    e.stopPropagation();
-
-    const draggedId = e.dataTransfer.getData('text/plain') || (draggedTile && draggedTile.id);
-    if (!draggedId || draggedId === targetTile.id) return;
+    if (!draggedTile || draggedTile.id === targetTile.id) return;
 
     setConfig(prev => {
       const newPages = prev.pages.map(page => {
         if (page.id === activePageId) {
           const tiles = [...page.tiles];
-          const draggedIndex = tiles.findIndex(t => t.id === draggedId);
+          const draggedIndex = tiles.findIndex(t => t.id === draggedTile.id);
           const targetIndex = tiles.findIndex(t => t.id === targetTile.id);
           
           if (draggedIndex !== -1 && targetIndex !== -1) {
@@ -1193,6 +1199,30 @@ export default function App() {
       });
       return { ...prev, pages: newPages };
     });
+  };
+
+  const handlePageDragEnter = (e, targetPage) => {
+    if (!isEditMode) return;
+    e.preventDefault();
+    if (!draggedPage || draggedPage.id === targetPage.id) return;
+
+    setConfig(prev => {
+      const pages = [...prev.pages];
+      const draggedIndex = pages.findIndex(p => p.id === draggedPage.id);
+      const targetIndex = pages.findIndex(p => p.id === targetPage.id);
+      
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const [movedItem] = pages.splice(draggedIndex, 1);
+        pages.splice(targetIndex, 0, movedItem);
+      }
+      return { ...prev, pages };
+    });
+  };
+
+  const handleTileDrop = (e, targetTile) => {
+    if (!isEditMode) return;
+    e.preventDefault();
+    e.stopPropagation();
     setDraggedTile(null);
   };
 
@@ -1200,21 +1230,6 @@ export default function App() {
     if (!isEditMode) return;
     e.preventDefault();
     e.stopPropagation();
-
-    const draggedId = e.dataTransfer.getData('text/plain') || (draggedPage && draggedPage.id);
-    if (!draggedId || draggedId === targetPage.id) return;
-
-    setConfig(prev => {
-      const pages = [...prev.pages];
-      const draggedIndex = pages.findIndex(p => p.id === draggedId);
-      const targetIndex = pages.findIndex(p => p.id === targetPage.id);
-
-      if (draggedIndex !== -1 && targetIndex !== -1) {
-        const [movedPage] = pages.splice(draggedIndex, 1);
-        pages.splice(targetIndex, 0, movedPage);
-      }
-      return { ...prev, pages };
-    });
     setDraggedPage(null);
   };
 
@@ -1424,7 +1439,7 @@ export default function App() {
       )}
 
       {showWhatsNew && !isPairing && config.settings.onboardingComplete && (
-          <WhatsNewModal version="1.6" onClose={() => setShowWhatsNew(false)} />
+          <WhatsNewModal version="1.7" onClose={() => setShowWhatsNew(false)} />
       )}
 
       {/* Sidebar */}
@@ -1439,8 +1454,9 @@ export default function App() {
               key={page.id}
               draggable={isEditMode}
               onDragStart={(e) => handleDragStart(e, page, 'page')}
-              onDragEnter={handleDragOver}
+              onDragEnter={(e) => handlePageDragEnter(e, page)}
               onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
               onDrop={(e) => handlePageDrop(e, page)}
               className="relative"
               style={{ touchAction: isEditMode ? 'none' : 'auto' }}
@@ -1620,8 +1636,9 @@ export default function App() {
                             showLabels={showLabels}
                             onLongPress={setActiveMorphology}
                             onDragStart={(e, t) => handleDragStart(e, t, 'tile')}
-                            onDragEnter={handleDragOver}
+                            onDragEnter={(e, t) => handleTileDragEnter(e, t)}
                             onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
                             onDrop={(e, t) => handleTileDrop(e, t)}
                             onEdit={setEditingTile}
                             onDelete={deleteTile}
@@ -1651,8 +1668,9 @@ export default function App() {
                  showLabels={showLabels}
                  onLongPress={setActiveMorphology}
                  onDragStart={(e, t) => handleDragStart(e, t, 'tile')}
-                 onDragEnter={handleDragOver}
+                 onDragEnter={(e, t) => handleTileDragEnter(e, t)}
                  onDragOver={handleDragOver}
+                 onDragEnd={handleDragEnd}
                  onDrop={(e, t) => handleTileDrop(e, t)}
                  onEdit={setEditingTile}
                  onDelete={deleteTile}
@@ -2223,7 +2241,7 @@ export default function App() {
             </button>
 
           </div>
-          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.6 by <span className="font-bold">Zip Solutions</span></div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.7 by <span className="font-bold">Zip Solutions</span></div>
         </div>
       )}
     </div>
