@@ -6,7 +6,7 @@ import { registerSW } from 'virtual:pwa-register'
 
 // Mobile Drag and Drop Polyfill
 import { polyfill } from "mobile-drag-drop";
-import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour-hack";
+import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour";
 import "mobile-drag-drop/default.css";
 
 polyfill({
