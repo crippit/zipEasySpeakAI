@@ -24,6 +24,17 @@ export default function WhatsNewModal({ version, onClose }) {
                 <div className="p-8 overflow-y-auto space-y-6">
                     <div>
                         <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-2">
+                            <CheckCircle2 className="text-emerald-500" size={18} /> High Density Grids & Keyboard Fixes
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 pl-6 space-y-2">
+                            <span>Added support for massive 16x16 and 32x32 button grids for robust communication layouts!</span>
+                            <br/>
+                            <span>Fixed an issue where onscreen keyboard dimensions would distort when using custom grid scales. Keyboards now always perfectly render onscreen in their standard layouts.</span>
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-2">
                             <CheckCircle2 className="text-emerald-500" size={18} /> Support for Base64 & Custom SVGs
                         </h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 pl-6 space-y-2">

@@ -203,7 +203,7 @@ const LOCATIONS = [
 ];
 
 // --- EXPANDED Default Configuration Data ---
-const APP_VERSION = 7;
+const APP_VERSION = 8;
 const DEFAULT_CONFIG = {
   version: APP_VERSION,
   settings: {
@@ -493,7 +493,7 @@ const Tile = React.memo(({
         }
       }}
       
-      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', touchAction: editMode ? 'none' : 'auto' }}
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', touchAction: editMode ? 'none' : 'auto', containerType: 'inline-size' }}
 
       className={`relative group flex flex-col items-center justify-center shadow-sm border-b-4 active:border-b-0 active:translate-y-1 transition-all cursor-pointer select-none overflow-hidden ${tile.color} border-black/10 hover:brightness-95
       ${isKeyboardKey ? 'aspect-[4/5] sm:aspect-square rounded-xl sm:rounded-2xl' : 'aspect-square rounded-2xl'}
@@ -501,7 +501,7 @@ const Tile = React.memo(({
       ${editMode && !isManagedPage ? 'cursor-grab active:cursor-grabbing' : ''}
       `}
     >
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 pointer-events-none">
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center p-[4cqw] pointer-events-none">
         {tile.type === 'image' ? (
           tile.image && String(tile.image).trim().startsWith('<svg') ? (
             <div 
@@ -512,14 +512,14 @@ const Tile = React.memo(({
             <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
           )
         ) : (
-          <span className={`${isKeyboardKey ? 'text-2xl sm:text-5xl md:text-6xl text-slate-900 dark:text-slate-900' : 'text-5xl md:text-6xl text-slate-900 dark:text-slate-900'} select-none pointer-events-none`}>{tile.image}</span>
+          <span style={{ fontSize: isKeyboardKey ? 'clamp(12px, 50cqw, 3.75rem)' : 'clamp(16px, 55cqw, 4.5rem)' }} className="text-slate-900 select-none pointer-events-none drop-shadow-sm">{tile.image}</span>
         )}
       </div>
       {showLabels && (
-        <div className={`w-full shrink-0 text-center py-1 px-1 bg-white/30 backdrop-blur-sm font-bold text-gray-800 ${isKeyboardKey ? 'hidden sm:flex text-sm md:text-base' : 'flex text-sm md:text-base'} truncate items-center justify-center gap-1 pointer-events-none`}>
-          {tile.label}
-          {tile.linkToPage && <ArrowRightCircle size={12} className="text-blue-600 opacity-70" />}
-          {tile.isSilent && editMode && <VolumeX size={12} className="text-red-500 opacity-70" />}
+        <div style={{ fontSize: 'clamp(8px, 16cqw, 1rem)' }} className={`w-full shrink-0 text-center py-[4cqw] px-[4cqw] bg-white/30 backdrop-blur-sm font-bold text-gray-800 ${isKeyboardKey ? 'hidden sm:flex' : 'flex'} overflow-hidden items-center justify-center gap-[2cqw] pointer-events-none leading-none`}>
+          <span className="truncate">{tile.label}</span>
+          {tile.linkToPage && <ArrowRightCircle style={{ width: 'clamp(8px, 12cqw, 16px)', height: 'clamp(8px, 12cqw, 16px)' }} className="text-blue-600 opacity-70 shrink-0" />}
+          {tile.isSilent && editMode && <VolumeX style={{ width: 'clamp(8px, 12cqw, 16px)', height: 'clamp(8px, 12cqw, 16px)' }} className="text-red-500 opacity-70 shrink-0" />}
         </div>
       )}
       
@@ -1446,7 +1446,7 @@ export default function App() {
       )}
 
       {showWhatsNew && !isPairing && config.settings.onboardingComplete && (
-          <WhatsNewModal version="1.7" onClose={() => setShowWhatsNew(false)} />
+          <WhatsNewModal version="1.8" onClose={() => setShowWhatsNew(false)} />
       )}
 
       {/* Sidebar */}
@@ -2250,7 +2250,7 @@ export default function App() {
             </button>
 
           </div>
-          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.7 by <span className="font-bold">Zip Solutions</span></div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-700 text-center text-xs text-slate-400 dark:text-slate-500">Zip EasySpeak v1.8 by <span className="font-bold">Zip Solutions</span></div>
         </div>
       )}
     </div>
