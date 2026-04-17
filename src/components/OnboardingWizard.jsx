@@ -204,13 +204,13 @@ export default function OnboardingWizard({
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Grid Display Density</label>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {['auto', 3, 4, 5, 8].map(size => (
+                                        {['auto', 3, 4, 5, 8, 16, 32].map(size => (
                                             <button 
                                                 key={size}
                                                 onClick={() => setWizardState(p => ({...p, gridSize: size}))}
                                                 className={`p-3 rounded-xl border-2 flex items-center justify-between font-bold ${wizardState.gridSize == size ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                             >
-                                                <span>{size === 'auto' ? 'Auto-Fit' : `${size} Columns`}</span>
+                                                <span>{size === 'auto' ? 'Auto-Fit' : (size === 16 ? '16x16 Grid' : (size === 32 ? '32x32 Grid' : `${size} Columns`))}</span>
                                                 {size !== 'auto' && <LayoutGrid size={16} className="opacity-50" />}
                                             </button>
                                         ))}
