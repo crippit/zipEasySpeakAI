@@ -524,16 +524,16 @@ const Tile = React.memo(({
       )}
       
       {hasVariants && !editMode && (
-         <div className="absolute bottom-1.5 right-1.5 flex gap-1 pointer-events-none opacity-80">
-           <div className="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
-           <div className="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
-           <div className="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
+         <div style={{ bottom: 'clamp(2px, 3cqw, 6px)', right: 'clamp(2px, 3cqw, 6px)', gap: 'clamp(1px, 1.5cqw, 4px)' }} className="absolute flex pointer-events-none opacity-80">
+           <div style={{ width: 'clamp(2px, 3cqw, 6px)', height: 'clamp(2px, 3cqw, 6px)' }} className="bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
+           <div style={{ width: 'clamp(2px, 3cqw, 6px)', height: 'clamp(2px, 3cqw, 6px)' }} className="bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
+           <div style={{ width: 'clamp(2px, 3cqw, 6px)', height: 'clamp(2px, 3cqw, 6px)' }} className="bg-slate-900 dark:bg-slate-900 rounded-full pointer-events-none shadow-sm"></div>
          </div>
       )}
 
       {isPredicted && (
-        <div className="absolute top-2 right-2 text-yellow-600 animate-pulse pointer-events-none">
-          <Sparkles size={20} fill="currentColor" />
+        <div style={{ top: 'clamp(2px, 3cqw, 8px)', right: 'clamp(2px, 3cqw, 8px)' }} className="absolute text-yellow-600 animate-pulse pointer-events-none">
+          <Sparkles style={{ width: 'clamp(10px, 15cqw, 20px)', height: 'clamp(10px, 15cqw, 20px)' }} fill="currentColor" />
         </div>
       )}
       
