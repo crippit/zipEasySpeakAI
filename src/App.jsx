@@ -1303,6 +1303,11 @@ export default function App() {
   const isCustomRowLayout = (activePage?.id === 'p_keyboard' || activePage?.id === 'p_numbers') && (activePage?.tiles || []).some(t => t.row !== undefined);
 
   const getGridClass = () => {
+    // Prevent grid size setting from breaking typing pages if they fallback to standard grid
+    if (activePage?.id === 'p_keyboard' || activePage?.id === 'p_numbers') {
+        return "grid-cols-7 sm:grid-cols-10";
+    }
+
     const s = config.settings.gridSize;
     if (s === 1) return "grid-cols-1";
     if (s === 2) return "grid-cols-2";
@@ -1310,6 +1315,8 @@ export default function App() {
     if (s === 4) return "grid-cols-4";
     if (s === 6) return "grid-cols-6";
     if (s === 8) return "grid-cols-8";
+    if (s === 16) return "grid-cols-16";
+    if (s === 32) return "grid-cols-32";
     return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
   };
 
@@ -1626,7 +1633,7 @@ export default function App() {
                    {rowTiles.map(tile => {
                      const isSpace = tile.id === 't_space';
                      return (
-                       <div key={tile.id} className={`${isSpace ? 'flex-[2_2_0%]' : 'flex-[1_1_0%]'} sm:max-w-[80px] md:max-w-[100px]`}>
+                       <div key={tile.id} className={isSpace ? 'flex-[2_2_0%] max-w-[35%] sm:max-w-[240px] md:max-w-[300px]' : 'flex-[1_1_0%] max-w-[9.5%] sm:max-w-[80px] md:max-w-[100px]'}>
                          <Tile 
                             tile={tile} 
                             onClick={handleTileClick} 
@@ -2022,6 +2029,8 @@ export default function App() {
                     <option value={4}>4 Columns</option>
                     <option value={6}>6 Columns</option>
                     <option value={8}>8 Columns</option>
+                    <option value={16}>16x16 Grid</option>
+                    <option value={32}>32x32 Grid</option>
                   </select>
                 </div>
                 
