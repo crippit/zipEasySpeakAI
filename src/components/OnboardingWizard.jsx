@@ -14,6 +14,8 @@ import {
     Monitor,
     Loader2
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { getAvailableVoices, isSpeechSupported, mapDashboardVoice } from '../utils/speech';
 
 export default function OnboardingWizard({ 
     onComplete, 
@@ -36,37 +38,26 @@ export default function OnboardingWizard({
     });
 
     useEffect(() => {
+        if (!isSpeechSupported()) return;
         const loadVoices = () => {
-            setAvailableVoices(window.speechSynthesis.getVoices());
+            setAvailableVoices(getAvailableVoices());
         };
         loadVoices();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-            window.speechSynthesis.onvoiceschanged = loadVoices;
-        }
+        window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+        return () => {
+            window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+        };
     }, []);
 
     const testVoice = () => {
+        if (!isSpeechSupported()) return;
         const utterance = new SpeechSynthesisUtterance("Hello, I am ready to speak");
         
         // Remote Teacher Voice takes precedence if synced during Step 1
         let targetUri = wizardState.voiceURI;
         if (currentConfig?.settings?.remoteVoiceName) {
-            const mappedName = currentConfig.settings.remoteVoiceName.toLowerCase();
-            const exact = availableVoices.find(v => v.name.toLowerCase() === mappedName);
-            if (exact) targetUri = exact.voiceURI;
-            else {
-                // Fuzzy fallback inside wizard
-                const isFemale = mappedName.includes('female') || mappedName.includes('girl');
-                const isMale = mappedName.includes('male') || mappedName.includes('boy');
-                const candidates = availableVoices.filter(v => v.lang.startsWith('en-'));
-                if (isFemale) {
-                    const f = candidates.find(v => v.name.includes('Samantha') || v.name.includes('Zira'));
-                    if (f) targetUri = f.voiceURI;
-                } else if (isMale) {
-                    const m = candidates.find(v => v.name.includes('Daniel') || v.name.includes('David'));
-                    if (m) targetUri = m.voiceURI;
-                }
-            }
+            const resolvedUri = mapDashboardVoice(currentConfig.settings.remoteVoiceName, availableVoices);
+            if (resolvedUri) targetUri = resolvedUri;
         }
 
         if (targetUri) {
@@ -123,7 +114,7 @@ export default function OnboardingWizard({
                                     {appPairingCode && (
                                         <div className="flex justify-center mb-8">
                                             <div className="p-4 bg-white rounded-2xl shadow-sm border-2 border-slate-100">
-                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${appPairingCode}`} alt="QR Code" className="w-48 h-48 mix-blend-multiply" />
+                                                <QRCodeSVG value={appPairingCode} size={192} />
                                             </div>
                                         </div>
                                     )}

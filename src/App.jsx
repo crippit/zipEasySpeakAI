@@ -53,6 +53,9 @@ import MagicBar from './components/MagicBar';
 import OnboardingWizard from './components/OnboardingWizard';
 import WhatsNewModal from './components/WhatsNewModal';
 import { NEXT_WORD_PREDICTIONS } from './services/ai';
+import DOMPurify from 'dompurify';
+import { QRCodeSVG } from 'qrcode.react';
+import { getAvailableVoices, isSpeechSupported, mapDashboardVoice } from './utils/speech';
 
 /**
  * Zip EasySpeak AAC
@@ -102,35 +105,6 @@ const mapDashboardLayout = (remoteLayout) => {
     if (l.includes('list')) return 1;
     if (l.includes('large')) return 3;
     return 'auto'; // Default grid
-};
-
-const mapDashboardVoice = (remoteName, availableVoices) => {
-    if (typeof remoteName !== 'string' || !availableVoices.length) return null;
-    const q = remoteName.toLowerCase();
-    
-    // Exact match first
-    const exact = availableVoices.find(v => v.name.toLowerCase() === q);
-    if (exact) return exact.voiceURI;
-    
-    // Fuzzy search based on keywords
-    const isFemale = q.includes('female') || q.includes('girl') || q.includes('woman');
-    const isMale = q.includes('male') || q.includes('boy') || q.includes('man');
-    
-    let candidates = availableVoices.filter(v => v.lang.startsWith('en-'));
-    if (candidates.length === 0) candidates = availableVoices; // Fallback
-    
-    if (isFemale) {
-        // Look for known female identifiers
-        const f = candidates.find(v => v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Victoria') || v.name.includes('Google US English') || v.name.includes('Karen'));
-        if (f) return f.voiceURI;
-    } else if (isMale) {
-        // Look for known male identifiers
-        const m = candidates.find(v => v.name.includes('Daniel') || v.name.includes('David') || v.name.includes('Mark') || v.name.includes('Alex') || v.name.includes('Fred'));
-        if (m) return m.voiceURI;
-    }
-    
-    // Absolute fallback
-    return candidates[0]?.voiceURI || null;
 };
 
 // --- Keyboard Generators ---
@@ -464,7 +438,16 @@ const Tile = React.memo(({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={tile.label || tile.phrase || 'Tile'}
       draggable={editMode && !isManagedPage}
+      onKeyDown={(e) => {
+        if (!editMode && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick(tile);
+        }
+      }}
       onDragStart={(e) => onDragStart(e, tile)}
       onDragEnter={(e) => onDragEnter && onDragEnter(e, tile)}
       onDragOver={onDragOver}
@@ -506,7 +489,7 @@ const Tile = React.memo(({
           tile.image && String(tile.image).trim().startsWith('<svg') ? (
             <div 
               className="max-w-full max-h-full flex items-center justify-center pointer-events-none w-3/4 h-3/4"
-              dangerouslySetInnerHTML={{ __html: tile.image }} 
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(tile.image), { USE_PROFILES: { svg: true } }) }} 
             />
           ) : (
             <img src={tile.image} alt={tile.label} className="max-w-full max-h-full object-contain pointer-events-none" />
@@ -561,8 +544,20 @@ export default function App() {
   const [remoteLockTrigger, setRemoteLockTrigger] = useState(0);
 
   // Use a ref to prevent infinite sync loops between upward and downward syncs
-  const lastUploadedLocalPages = useRef('');
+  const lastUploadedLocalPages = useRef(null);
   const lastUploadedPin = useRef();
+  const pairingUnsubRef = useRef(null);
+  const pairingAttemptRef = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      pairingAttemptRef.current += 1;
+      if (pairingUnsubRef.current) {
+        pairingUnsubRef.current();
+        pairingUnsubRef.current = null;
+      }
+    };
+  }, []);
 
   // Authenticate Anonymously for Firebase Access
   useEffect(() => {
@@ -658,17 +653,17 @@ export default function App() {
 
         setConfig(prev => {
           const localPages = prev.pages.filter(p => p.type !== 'managed');
-          const managedPages = (data.pages || []).filter(p => p.type === 'managed');
-          
-          // Re-map keyboard links just in case
-          managedPages.forEach(p => {
-             (p.tiles || []).forEach(t => {
-                 if (t.linkToPage === 'p_qwerty_full') t.linkToPage = 'p_keyboard';
-             });
-          });
+          const managedPages = (data.pages || [])
+            .filter(p => p.type === 'managed')
+            .map(p => ({
+              ...p,
+              tiles: (p.tiles || []).map(t =>
+                t.linkToPage === 'p_qwerty_full' ? { ...t, linkToPage: 'p_keyboard' } : t
+              )
+            }));
           
           // --- Handle Remote Admin PIN Lockout ---
-          let newSettings = prev.settings;
+          let newSettings = { ...prev.settings };
           const remotePin = data.adminPin !== undefined ? data.adminPin : (data.pin !== undefined ? data.pin : undefined);
           
           if (remotePin !== undefined && remotePin !== prev.settings.adminPin) {
@@ -726,7 +721,7 @@ export default function App() {
 
     // CRITICAL FIX: Do not trigger an upload unless the local state actually changed.
     // This stops the infinite sync loop with the downward listener.
-    if (serializedLocal === lastUploadedLocalPages.current) {
+    if (lastUploadedLocalPages.current !== null && serializedLocal === lastUploadedLocalPages.current) {
         return;
     }
 
@@ -874,7 +869,11 @@ export default function App() {
 
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    } catch (e) {
+      console.error("Failed to persist config to localStorage", e);
+    }
   }, [config]);
 
   useEffect(() => {
@@ -895,14 +894,17 @@ export default function App() {
   }, [config.settings.enableTimeContext]); 
 
   useEffect(() => {
+    if (!isSpeechSupported()) return;
     const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
-      setAvailableVoices(voices);
+      setAvailableVoices(getAvailableVoices());
     };
     loadVoices();
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    return () => {
+      if (window.speechSynthesis.onvoiceschanged === loadVoices) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
   }, []);
 
   // --- Theme Effect ---
@@ -932,7 +934,7 @@ export default function App() {
 
   // --- Actions ---
   const speak = (text) => {
-    if (!text) return;
+    if (!text || !isSpeechSupported()) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = config.settings.rate;
@@ -982,7 +984,7 @@ export default function App() {
                 const last = newArr[newArr.length - 1];
                 if (last && last.isTyped) {
                     if (config.settings.speakOnSpace !== false) speak(last.phrase);
-                    last.isTyped = false; 
+                    newArr[newArr.length - 1] = { ...last, isTyped: false }; 
                 }
                 return newArr;
             });
@@ -1066,7 +1068,22 @@ export default function App() {
   };
 
   // --- Device Pairing Flow ---
+  const cancelPairing = () => {
+    pairingAttemptRef.current += 1;
+    if (pairingUnsubRef.current) {
+      pairingUnsubRef.current();
+      pairingUnsubRef.current = null;
+    }
+    setIsPairing(false);
+    setAppPairingCode(null);
+  };
+
   const handleGeneratePairingCode = async (onSuccessNotConfigured) => {
+    const attemptId = ++pairingAttemptRef.current;
+    if (pairingUnsubRef.current) {
+      pairingUnsubRef.current();
+      pairingUnsubRef.current = null;
+    }
     setIsPairing(true);
     // Generate 10 char code
     const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // removed O,0,1,I for clarity
@@ -1097,6 +1114,10 @@ export default function App() {
         createdAt: new Date().toISOString()
       });
 
+      if (pairingAttemptRef.current !== attemptId) {
+        return;
+      }
+
       // Listen for dashboard to approve
       const unsub = onSnapshot(codeRef, async (docSnap) => {
         const data = docSnap.data();
@@ -1123,15 +1144,11 @@ export default function App() {
                if (isConfigured) {
                    // Profile has data: Auto-complete onboarding
                    setConfig(prev => ({ ...prev, settings: { ...prev.settings, onboardingComplete: true } }));
-                   setIsPairing(false);
-                   setAppPairingCode(null);
-                   unsub();
+                   cancelPairing();
                    alert("Successfully connected to school district! Your settings have been applied.");
                } else {
                    // Brand new empty profile: Drop out of pairing overlay and advance wizard
-                   setIsPairing(false);
-                   setAppPairingCode(null);
-                   unsub();
+                   cancelPairing();
                    alert("Successfully connected to school district! Please continue your setup.");
                    if (onSuccessNotConfigured && typeof onSuccessNotConfigured === 'function') {
                        onSuccessNotConfigured();
@@ -1139,9 +1156,7 @@ export default function App() {
                }
            } catch (err) {
                console.error("Error checking student config post-pairing", err);
-               setIsPairing(false);
-               setAppPairingCode(null);
-               unsub();
+               cancelPairing();
                alert("Successfully connected to school district!");
                if (onSuccessNotConfigured && typeof onSuccessNotConfigured === 'function') {
                    onSuccessNotConfigured();
@@ -1149,6 +1164,7 @@ export default function App() {
            }
         }
       });
+      pairingUnsubRef.current = unsub;
     } catch(e) {
       console.error("Pairing Error:", e);
       alert("Failed to generate linking code.");
@@ -1332,25 +1348,78 @@ export default function App() {
   };
   const handleExport = () => downloadJSON(config, "zip_easyspeak_backup.json");
   const handleExportPage = (page) => downloadJSON({ version: 1, settings: config.settings, pages: [page] }, `page_${page.label.replace(/\s+/g, '_').toLowerCase()}.json`);
+  const sanitizeImportedPages = (pages) => {
+    const cleanPages = [];
+    for (const p of pages) {
+      if (!p || typeof p !== 'object' || typeof p.id !== 'string') return null;
+      if (p.tiles !== undefined && !Array.isArray(p.tiles)) return null;
+      const cleanTiles = [];
+      for (const t of p.tiles || []) {
+        if (!t || typeof t !== 'object' || typeof t.id !== 'string' || typeof t.phrase !== 'string') {
+          return null;
+        }
+        cleanTiles.push({
+          ...t,
+          image:
+            t.type === 'image' && typeof t.image === 'string' && t.image.trim().startsWith('<svg')
+              ? DOMPurify.sanitize(t.image, { USE_PROFILES: { svg: true } })
+              : t.image
+        });
+      }
+      cleanPages.push({
+        ...p,
+        type: p.type === 'managed' ? 'managed' : 'local',
+        tiles: cleanTiles
+      });
+    }
+    return cleanPages;
+  };
+
   const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const fileReader = new FileReader();
-    fileReader.readAsText(e.target.files[0], "UTF-8");
+    fileReader.readAsText(file, "UTF-8");
     fileReader.onload = evt => {
       try {
         const imported = JSON.parse(evt.target.result);
-        if (imported.pages && Array.isArray(imported.pages)) { setConfig(imported); setActivePageId(imported.pages[0].id); alert("Full backup restored!"); }
-        else alert("Invalid config.");
+        if (imported && Array.isArray(imported.pages) && imported.pages.length > 0) {
+          const cleanPages = sanitizeImportedPages(imported.pages);
+          if (!cleanPages || cleanPages.length === 0) {
+            alert("Invalid config.");
+            return;
+          }
+          setConfig({
+            ...DEFAULT_CONFIG,
+            ...imported,
+            version: APP_VERSION,
+            settings: {
+              ...DEFAULT_CONFIG.settings,
+              ...(imported.settings && typeof imported.settings === 'object' ? imported.settings : {})
+            },
+            pages: cleanPages
+          });
+          setActivePageId(cleanPages[0].id);
+          alert("Full backup restored!");
+        } else alert("Invalid config.");
       } catch (err) { alert("Error parsing file."); }
     };
   };
   const handleMergeImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const fileReader = new FileReader();
-    fileReader.readAsText(e.target.files[0], "UTF-8");
+    fileReader.readAsText(file, "UTF-8");
     fileReader.onload = evt => {
       try {
         const imported = JSON.parse(evt.target.result);
-        if (imported.pages && Array.isArray(imported.pages)) {
-          const newPages = imported.pages.map(p => config.pages.some(existing => existing.id === p.id) ? { ...p, id: generateId(), label: `${p.label} (Imported)` } : p);
+        if (imported && Array.isArray(imported.pages) && imported.pages.length > 0) {
+          const cleanPages = sanitizeImportedPages(imported.pages);
+          if (!cleanPages || cleanPages.length === 0) {
+            alert("Invalid file.");
+            return;
+          }
+          const newPages = cleanPages.map(p => config.pages.some(existing => existing.id === p.id) ? { ...p, id: generateId(), label: `${p.label} (Imported)` } : p);
           setConfig(prev => ({ ...prev, pages: [...prev.pages, ...newPages] }));
           alert(`Success! Added ${newPages.length} page(s).`);
         } else alert("Invalid file.");
@@ -1436,10 +1505,7 @@ export default function App() {
                  isPairing={isPairing}
                  appPairingCode={appPairingCode}
                  onPairRequest={handleGeneratePairingCode}
-                 onCancelPairing={() => {
-                     setIsPairing(false);
-                     setAppPairingCode(null);
-                 }}
+                 onCancelPairing={cancelPairing}
                  onComplete={() => console.log('Onboarding complete')}
              />
           </div>
@@ -1987,13 +2053,15 @@ export default function App() {
                     </div>
                     {appPairingCode && (
                         <div className="flex justify-center mb-4">
-                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${appPairingCode}`} alt="QR Code" className="rounded-lg shadow-sm border p-2 bg-white" />
+                            <div className="rounded-lg shadow-sm border p-2 bg-white">
+                                <QRCodeSVG value={appPairingCode} size={150} />
+                            </div>
                         </div>
                     )}
                     <div className="flex items-center justify-center gap-2 text-slate-500 text-xs mb-4">
                         <Loader2 className="animate-spin" size={14} /> Waiting for teacher...
                     </div>
-                    <button onClick={() => { setIsPairing(false); setAppPairingCode(null); }} className="w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-bold transition-colors">Cancel</button>
+                    <button onClick={cancelPairing} className="w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-bold transition-colors">Cancel</button>
                   </div>
                 ) : (
                   <div>

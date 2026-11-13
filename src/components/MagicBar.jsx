@@ -9,17 +9,22 @@ export default function MagicBar({ sentence, onSelect, context }) {
 
     // Initialize Model once on mount
     useEffect(() => {
+        let mounted = true;
         setModelLoading(true);
         aiService.init().then(() => {
-            setModelLoading(false);
+            if (mounted) setModelLoading(false);
         });
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     // Generate suggestions when sentence changes
     useEffect(() => {
+        let cancelled = false;
         const timer = setTimeout(async () => {
             if (sentence.length === 0) {
-                setSuggestions([]);
+                if (!cancelled) setSuggestions([]);
                 return;
             }
 
@@ -27,11 +32,16 @@ export default function MagicBar({ sentence, onSelect, context }) {
             // Extract just the labels or phrases for the AI
             const words = sentence.map(t => t.phrase);
             const results = await aiService.expandSentence(words, context);
-            setSuggestions(results);
-            setLoading(false);
+            if (!cancelled) {
+                setSuggestions(results);
+                setLoading(false);
+            }
         }, 600); // 600ms debounce to wait for user to stop typing
 
-        return () => clearTimeout(timer);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
     }, [sentence, context]);
 
     // Don't render if empty and not loading model
