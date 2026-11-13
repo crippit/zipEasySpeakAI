@@ -43,11 +43,9 @@ export default function OnboardingWizard({
             setAvailableVoices(getAvailableVoices());
         };
         loadVoices();
-        window.speechSynthesis.onvoiceschanged = loadVoices;
+        window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
         return () => {
-            if (window.speechSynthesis.onvoiceschanged === loadVoices) {
-                window.speechSynthesis.onvoiceschanged = null;
-            }
+            window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
         };
     }, []);
 

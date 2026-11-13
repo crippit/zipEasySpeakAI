@@ -547,9 +547,11 @@ export default function App() {
   const lastUploadedLocalPages = useRef(null);
   const lastUploadedPin = useRef();
   const pairingUnsubRef = useRef(null);
+  const pairingAttemptRef = useRef(0);
 
   useEffect(() => {
     return () => {
+      pairingAttemptRef.current += 1;
       if (pairingUnsubRef.current) {
         pairingUnsubRef.current();
         pairingUnsubRef.current = null;
@@ -717,15 +719,9 @@ export default function App() {
     const localPages = config.pages.filter(p => p.type !== 'managed');
     const serializedLocal = JSON.stringify(localPages);
 
-    // Initialize baseline on first run so opening the app doesn't trigger an unnecessary write
-    if (lastUploadedLocalPages.current === null) {
-        lastUploadedLocalPages.current = serializedLocal;
-        return;
-    }
-
     // CRITICAL FIX: Do not trigger an upload unless the local state actually changed.
     // This stops the infinite sync loop with the downward listener.
-    if (serializedLocal === lastUploadedLocalPages.current) {
+    if (lastUploadedLocalPages.current !== null && serializedLocal === lastUploadedLocalPages.current) {
         return;
     }
 
@@ -1073,6 +1069,7 @@ export default function App() {
 
   // --- Device Pairing Flow ---
   const cancelPairing = () => {
+    pairingAttemptRef.current += 1;
     if (pairingUnsubRef.current) {
       pairingUnsubRef.current();
       pairingUnsubRef.current = null;
@@ -1082,6 +1079,7 @@ export default function App() {
   };
 
   const handleGeneratePairingCode = async (onSuccessNotConfigured) => {
+    const attemptId = ++pairingAttemptRef.current;
     if (pairingUnsubRef.current) {
       pairingUnsubRef.current();
       pairingUnsubRef.current = null;
@@ -1115,6 +1113,10 @@ export default function App() {
         deviceName: getDeviceName(),
         createdAt: new Date().toISOString()
       });
+
+      if (pairingAttemptRef.current !== attemptId) {
+        return;
+      }
 
       // Listen for dashboard to approve
       const unsub = onSnapshot(codeRef, async (docSnap) => {
@@ -1346,24 +1348,32 @@ export default function App() {
   };
   const handleExport = () => downloadJSON(config, "zip_easyspeak_backup.json");
   const handleExportPage = (page) => downloadJSON({ version: 1, settings: config.settings, pages: [page] }, `page_${page.label.replace(/\s+/g, '_').toLowerCase()}.json`);
-  const sanitizeImportedPages = (pages) =>
-    pages
-      .filter(p => p && typeof p === 'object' && typeof p.id === 'string')
-      .map(p => ({
+  const sanitizeImportedPages = (pages) => {
+    const cleanPages = [];
+    for (const p of pages) {
+      if (!p || typeof p !== 'object' || typeof p.id !== 'string') return null;
+      if (p.tiles !== undefined && !Array.isArray(p.tiles)) return null;
+      const cleanTiles = [];
+      for (const t of p.tiles || []) {
+        if (!t || typeof t !== 'object' || typeof t.id !== 'string' || typeof t.phrase !== 'string') {
+          return null;
+        }
+        cleanTiles.push({
+          ...t,
+          image:
+            t.type === 'image' && typeof t.image === 'string' && t.image.trim().startsWith('<svg')
+              ? DOMPurify.sanitize(t.image, { USE_PROFILES: { svg: true } })
+              : t.image
+        });
+      }
+      cleanPages.push({
         ...p,
         type: p.type === 'managed' ? 'managed' : 'local',
-        tiles: Array.isArray(p.tiles)
-          ? p.tiles
-              .filter(t => t && typeof t === 'object')
-              .map(t => ({
-                ...t,
-                image:
-                  t.type === 'image' && typeof t.image === 'string' && t.image.trim().startsWith('<svg')
-                    ? DOMPurify.sanitize(t.image, { USE_PROFILES: { svg: true } })
-                    : t.image
-              }))
-          : []
-      }));
+        tiles: cleanTiles
+      });
+    }
+    return cleanPages;
+  };
 
   const handleImport = (e) => {
     const file = e.target.files?.[0];
@@ -1375,7 +1385,7 @@ export default function App() {
         const imported = JSON.parse(evt.target.result);
         if (imported && Array.isArray(imported.pages) && imported.pages.length > 0) {
           const cleanPages = sanitizeImportedPages(imported.pages);
-          if (cleanPages.length === 0) {
+          if (!cleanPages || cleanPages.length === 0) {
             alert("Invalid config.");
             return;
           }
@@ -1405,6 +1415,10 @@ export default function App() {
         const imported = JSON.parse(evt.target.result);
         if (imported && Array.isArray(imported.pages) && imported.pages.length > 0) {
           const cleanPages = sanitizeImportedPages(imported.pages);
+          if (!cleanPages || cleanPages.length === 0) {
+            alert("Invalid file.");
+            return;
+          }
           const newPages = cleanPages.map(p => config.pages.some(existing => existing.id === p.id) ? { ...p, id: generateId(), label: `${p.label} (Imported)` } : p);
           setConfig(prev => ({ ...prev, pages: [...prev.pages, ...newPages] }));
           alert(`Success! Added ${newPages.length} page(s).`);

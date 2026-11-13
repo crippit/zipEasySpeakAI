@@ -33,8 +33,8 @@ function isBlockedHost(hostname) {
     }
   }
 
-  // Block IPv6 ULA / link-local
-  if (host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80:')) {
+  // Block IPv6 ULA / link-local (only when host is an IPv6 address)
+  if (host.includes(':') && (host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80:'))) {
     return true;
   }
 
@@ -80,28 +80,46 @@ export async function onRequest(context) {
   }
 
   try {
-    const targetObj = new URL(targetUrl);
+    let currentUrl = targetUrl;
+    let currentObj = new URL(currentUrl);
+    let response;
+    let isOpenSymbolsAPI = false;
+    const MAX_REDIRECTS = 5;
 
-    // 5. Security: Protocol & Private Host Check (Prevent SSRF/Local Network Scanning)
-    if (targetObj.protocol !== 'https:') {
-      return new Response('Forbidden: Only HTTPS URLs allowed', { status: 400 });
+    for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
+      // 5. Security: Protocol & Private Host Check (Prevent SSRF/Local Network Scanning)
+      if (currentObj.protocol !== 'https:') {
+        return new Response('Forbidden: Only HTTPS URLs allowed', { status: 400 });
+      }
+      if (isBlockedHost(currentObj.hostname)) {
+        return new Response('Forbidden: Target host not allowed', { status: 403 });
+      }
+
+      isOpenSymbolsAPI =
+        currentObj.hostname === 'www.opensymbols.org' || currentObj.hostname === 'api.opensymbols.org';
+
+      // 6. Fetch the resource with manual redirect handling
+      response = await fetch(currentUrl, {
+        redirect: 'manual',
+        headers: {
+          'User-Agent': 'ZipEasySpeak/1.0',
+          ...(isOpenSymbolsAPI && request.headers.get('Authorization')
+            ? { Authorization: request.headers.get('Authorization') }
+            : {}),
+        },
+      });
+
+      const isRedirect = [301, 302, 303, 307, 308].includes(response.status);
+      if (!isRedirect) break;
+
+      const location = response.headers.get('location');
+      if (!location || redirects === MAX_REDIRECTS) {
+        return new Response('Proxy fetch failed', { status: 502 });
+      }
+
+      currentObj = new URL(location, currentUrl);
+      currentUrl = currentObj.toString();
     }
-    if (isBlockedHost(targetObj.hostname)) {
-      return new Response('Forbidden: Target host not allowed', { status: 403 });
-    }
-
-    const isOpenSymbolsAPI =
-      targetObj.hostname === 'www.opensymbols.org' || targetObj.hostname === 'api.opensymbols.org';
-
-    // 6. Fetch the resource
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'ZipEasySpeak/1.0',
-        ...(isOpenSymbolsAPI && request.headers.get('Authorization')
-          ? { Authorization: request.headers.get('Authorization') }
-          : {}),
-      },
-    });
 
     // 7. Security: Content-Type Check (Anti-Abuse)
     const contentType = (response.headers.get('content-type') || '').toLowerCase();
@@ -116,8 +134,20 @@ export async function onRequest(context) {
       return new Response('Forbidden: Proxy only allows image content.', { status: 403 });
     }
 
-    // 8. Return Response with safe headers
-    const headers = new Headers(response.headers);
+    // 8. Return Response with explicit safe header allowlist
+    const ALLOWED_RESPONSE_HEADERS = [
+      'content-type',
+      'content-length',
+      'cache-control',
+      'etag',
+      'last-modified',
+      'expires',
+    ];
+    const headers = new Headers();
+    for (const name of ALLOWED_RESPONSE_HEADERS) {
+      const value = response.headers.get(name);
+      if (value !== null) headers.set(name, value);
+    }
     headers.set('Access-Control-Allow-Origin', origin || ALLOWED_ORIGINS[0]);
     headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     headers.set('X-Content-Type-Options', 'nosniff');
