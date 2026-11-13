@@ -13,8 +13,6 @@ polyfill({
     dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
 });
 
-window.addEventListener('touchmove', function() {}, {passive: false});
-
 // Automatically register and update the PWA service worker
 registerSW({ immediate: true })
 

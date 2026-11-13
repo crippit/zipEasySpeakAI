@@ -1,26 +1,68 @@
+const ALLOWED_ORIGINS = [
+  'https://zipeasyspeakai.pages.dev',
+  'https://easyspeakai.zipsolutions.org',
+];
+
+function isBlockedHost(hostname) {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (
+    host === 'localhost' ||
+    host === '0.0.0.0' ||
+    host === '::1' ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    host.endsWith('.localhost')
+  ) {
+    return true;
+  }
+
+  // Block private/link-local IPv4 ranges and cloud metadata IPs
+  const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4Match) {
+    const [, a, b] = ipv4Match.map(Number);
+    if (
+      a === 10 ||
+      a === 127 ||
+      a === 0 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 100 && b >= 64 && b <= 127)
+    ) {
+      return true;
+    }
+  }
+
+  // Block IPv6 ULA / link-local
+  if (host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80:')) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function onRequest(context) {
   const request = context.request;
   const url = new URL(request.url);
   const targetUrl = url.searchParams.get('url');
-
-  // 1. Configuration: Allowed Domains
-  // Added your current project domain and localhost for development
-  const allowedOrigins = [
-    'https://zipeasyspeakai.pages.dev',
-    'https://easyspeakai.zipsolutions.org'
-  ];
   const origin = request.headers.get('Origin');
+  const fetchSite = request.headers.get('Sec-Fetch-Site');
 
-  // 2. Handle CORS Preflight (OPTIONS)
-  if (request.method === "OPTIONS") {
-    const allowOrigin = allowedOrigins.includes(origin) ? origin : 'null';
+  // 1. Handle CORS Preflight (OPTIONS)
+  if (request.method === 'OPTIONS') {
+    const allowOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : 'null';
     return new Response(null, {
       headers: {
-        "Access-Control-Allow-Origin": allowOrigin,
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        'Access-Control-Allow-Origin': allowOrigin,
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
     });
+  }
+
+  // 2. Restrict HTTP methods
+  if (request.method !== 'GET') {
+    return new Response('Method Not Allowed', { status: 405 });
   }
 
   // 3. Validate: Target URL exists
@@ -28,66 +70,67 @@ export async function onRequest(context) {
     return new Response('Missing url parameter', { status: 400 });
   }
 
-  // 4. Security: Origin & Site Check (Stop abuse BEFORE fetching)
-  const fetchSite = request.headers.get('Sec-Fetch-Site');
-
-  // Block cross-site embedding abuse
+  // 4. Security: Origin & Same-Origin Check
   if (fetchSite === 'cross-site') {
     return new Response('Forbidden: Cross-Site Request', { status: 403 });
   }
-
-  // Block unauthorized origins (if Origin header exists)
-  if (origin && !allowedOrigins.includes(origin)) {
+  const isAllowedOrigin = origin ? ALLOWED_ORIGINS.includes(origin) : fetchSite === 'same-origin';
+  if (!isAllowedOrigin) {
     return new Response('Forbidden: Invalid Origin', { status: 403 });
   }
 
   try {
     const targetObj = new URL(targetUrl);
 
-    // 5. Security: Protocol Check (Prevent SSRF/Local Network Scanning)
+    // 5. Security: Protocol & Private Host Check (Prevent SSRF/Local Network Scanning)
     if (targetObj.protocol !== 'https:') {
       return new Response('Forbidden: Only HTTPS URLs allowed', { status: 400 });
     }
+    if (isBlockedHost(targetObj.hostname)) {
+      return new Response('Forbidden: Target host not allowed', { status: 403 });
+    }
 
-    // Rule A: Allow OpenSymbols API (Search)
-    const isOpenSymbolsAPI = targetObj.hostname === 'www.opensymbols.org' || targetObj.hostname === 'api.opensymbols.org';
+    const isOpenSymbolsAPI =
+      targetObj.hostname === 'www.opensymbols.org' || targetObj.hostname === 'api.opensymbols.org';
 
     // 6. Fetch the resource
     const response = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'ZipEasySpeak/1.0',
-        // Forward auth header if present, but strictly only to OpenSymbols
         ...(isOpenSymbolsAPI && request.headers.get('Authorization')
-          ? { 'Authorization': request.headers.get('Authorization') }
-          : {})
-      }
+          ? { Authorization: request.headers.get('Authorization') }
+          : {}),
+      },
     });
 
     // 7. Security: Content-Type Check (Anti-Abuse)
-    // We fetched it, but before we return it, check what it is.
-    const contentType = response.headers.get('content-type');
-    // Enhanced check to ensure SVGs (often svg+xml) are allowed
-    const isImage = contentType && (contentType.startsWith('image/') || contentType.includes('svg+xml'));
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    const isImage = contentType.startsWith('image/');
+    const isJson = contentType.includes('application/json');
 
-    // Strictly block non-image content unless it is the specific API we trust
-    if (!isOpenSymbolsAPI && !isImage) {
-      return new Response(`Forbidden: Proxy only allows images or OpenSymbols API. Content-Type '${contentType}' not allowed.`, { status: 403 });
+    if (isOpenSymbolsAPI) {
+      if (!isJson && !isImage) {
+        return new Response('Forbidden: Invalid content type from OpenSymbols.', { status: 403 });
+      }
+    } else if (!isImage) {
+      return new Response('Forbidden: Proxy only allows image content.', { status: 403 });
     }
 
-    // 8. Return Response
-    const newResponse = new Response(response.body, {
+    // 8. Return Response with safe headers
+    const headers = new Headers(response.headers);
+    headers.set('Access-Control-Allow-Origin', origin || ALLOWED_ORIGINS[0]);
+    headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    headers.set('X-Content-Type-Options', 'nosniff');
+    if (contentType.includes('svg+xml')) {
+      headers.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
+    }
+
+    return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
-      headers: new Headers(response.headers)
+      headers,
     });
-
-    // Set CORS headers (Safe because we validated Origin in step 4)
-    newResponse.headers.set('Access-Control-Allow-Origin', origin || allowedOrigins[0]);
-    newResponse.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-
-    return newResponse;
-
-  } catch (err) {
-    return new Response('Proxy fetch failed: ' + err.message, { status: 500 });
+  } catch {
+    return new Response('Proxy fetch failed', { status: 502 });
   }
 }
